@@ -24,7 +24,7 @@ public:
 	Sensor(const Sensor& sensor){
 		*this = sensor;
 	}
-	// hi
+
 	Sensor& operator=(const Sensor& other_sensor);
 
 	// returns the sensor's information of the current location of the robot
