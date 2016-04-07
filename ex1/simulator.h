@@ -10,45 +10,38 @@
 
 using namespace std;
 
+class House;
+
 class Sensor : public AbstractSensor{
-	string* m_matrix; // representation of the house's current dust state
-	int m_matrix_rows;
-	int m_matrix_cols;
-	pair<int, int> m_curr_location; // current location of the sensor
+	House* m_house;
+	pair<int, int> m_curr_location;
 
 public:
-	Sensor(string* matrix, const int& rows, const int& cols, const pair<int, int>& init_location);
 
-	~Sensor();
-
-	Sensor(const Sensor& sensor){
-		*this = sensor;
+	Sensor() : m_house(nullptr), m_curr_location(0,0){
 	}
 
-	Sensor& operator=(const Sensor& other_sensor);
+	~Sensor(){}
 
 	// returns the sensor's information of the current location of the robot
 	virtual SensorInformation sense() const;
 
-	string* get_matrix(){
-		return m_matrix;
+	House* get_house() const{
+		return m_house;
 	}
 
-	const int& get_matrix_rows() const{
-		return m_matrix_rows;
+	void set_house(House* house){
+		m_house = house;
 	}
 
-	const int& get_matrix_cols() const{
-		return m_matrix_cols;
-	}
-
-	const pair<int, int>& get_curr_location() const{
+	const pair<int, int>& get_curr_location() const {
 		return m_curr_location;
 	}
 
-	void set_curr_location(const pair<int, int>& new_location){
-		m_curr_location = new_location;
+	void set_curr_location(pair<int, int>& location){
+		m_curr_location = location;
 	}
+
 };
 
 
@@ -112,8 +105,9 @@ public:
 
 	~House();
 
-	House(const House&) = delete;
-	House& operator=(const House&) = delete;
+	House(const House& house);
+
+	House& operator=(const House& house) = delete;
 
 	string* get_house_matrix() const{
 		return m_house_matrix;
@@ -146,11 +140,10 @@ public:
 
 
 class Robot{
-	AbstractAlgorithm* m_algorithm; // the algorithm of the robot
 	House* m_house; // the house 
-	Sensor* m_sensor; // the sensor of the robot
 	int m_curr_battary_level; // the current battary level of the robot
 
+	pair<int, int> m_curr_location;// curr location of the robot
 	bool m_is_active; // is the robot currently active in the simulation
 	int m_this_num_of_steps; // how much steps this robot has done during the simulation (for the score formula)
 	int m_dirt_collected; // how much dirt collected during the simulation of this robot
@@ -159,32 +152,21 @@ class Robot{
 
 public:
 
-	Robot(int init_battary_level, AbstractAlgorithm* algorithm, House* house, Sensor* sensor) :
-		m_algorithm(algorithm), m_house(house), m_sensor(sensor), m_curr_battary_level(init_battary_level), m_is_active(true),
+	Robot(int init_battary_level, House* house) :
+		m_house(house), m_curr_battary_level(init_battary_level), m_curr_location(m_house->get_house_docking_station()), m_is_active(true),
 		m_this_num_of_steps(0), m_dirt_collected(0), m_position_in_competition(0), m_is_valid(true) { }
 
 	~Robot(){
-		delete m_algorithm;
-		//delete m_sensor; //  this pointer is deleted somewhere else
-		//delete m_house; // this pointer is deleted somewhere else
+		delete m_house;
 	}
 
 	Robot(const Robot& robot) = delete;
 
 	Robot& operator=(const Robot& other_robot) = delete;
 
-	//bool is_finished();
-
-	AbstractAlgorithm* get_algorithm(){
-		return m_algorithm;
-	}
 
 	House* get_house(){
 		return m_house;
-	}
-
-	Sensor* get_sensor(){
-		return m_sensor;
 	}
 
 	const int& get_curr_battary_level() const{
@@ -239,6 +221,14 @@ public:
 	void set_valid(bool valid){
 		m_is_valid = valid;
 	}
+
+	pair<int, int>& get_curr_location(){
+		return m_curr_location;
+	}
+
+	void set_curr_location(pair<int, int>& location){
+		m_curr_location = location;
+	}
 };
 
 
@@ -249,18 +239,19 @@ class Simulator{
 
 	int m_steps; // num of steps the simulator did
 	Robot*** m_robots_matrix; // matrix of pointers to Robots. each row represents an algorithm and each column represents a house
-	House** m_house_arr; // array of pointers to houses
+	AbstractAlgorithm** m_algorithm_arr;
+	Sensor** m_sensor_arr;
 	const int m_num_of_houses;
 	const int m_num_of_algorithms;
 	int m_winner_num_steps; // num of steps the winner has done during the simulation. (if there is no winner, remains MaxSteps)
 	int m_not_active; // num of robots that are not active any more
 
 public:
-	Simulator(map<string, int>& config, House** house_arr, const int& num_of_houses,
-		const int& num_of_algorithms) :
-		m_config(config), m_steps(0), m_robots_matrix(nullptr), m_house_arr(house_arr), m_num_of_houses(num_of_houses),
-		m_num_of_algorithms(num_of_algorithms), m_winner_num_steps(config["MaxSteps"]), m_not_active(0) {
-		init_robots_matrix();
+	Simulator(map<string, int>& config, AbstractAlgorithm** algorithm_arr,Sensor** sensor_arr, const int& num_of_houses,
+		const int& num_of_algorithms, House** house_arr) :
+		m_config(config), m_steps(0), m_robots_matrix(nullptr), m_algorithm_arr(algorithm_arr),m_sensor_arr(sensor_arr),
+		m_num_of_houses(num_of_houses), m_num_of_algorithms(num_of_algorithms), m_winner_num_steps(config["MaxSteps"]), m_not_active(0) {
+		init_robots_matrix(house_arr);
 	}
 
 	~Simulator();
@@ -269,7 +260,7 @@ public:
 	Simulator& operator=(const Simulator&) = delete;
 
 	// Initiate the field m_robots_matrix 
-	void init_robots_matrix();
+	void init_robots_matrix(House** house_arr);
 
 	const int get_steps() const{
 		return m_steps;
@@ -295,6 +286,13 @@ public:
 		m_not_active++;
 	}
 
+	Sensor** get_sensor_arr(){
+		return m_sensor_arr;
+	}
+
+	AbstractAlgorithm** get_algorithm_arr(){
+		return m_algorithm_arr;
+	}
 	// simulate a single steps of the simulation:
 	// iterate over all houses, for each house runs a single steps of all the algorithms (in parallel).
 	// if the flag about_to_finish == true, the function aboutToFinish(int stepsTillFinishing) of each algorithm is called.
