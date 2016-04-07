@@ -97,39 +97,11 @@ SensorInformation Sensor::sense() const {
 // Naive step : chooses randomly where to go (from the current valid directions)
 Direction OurAlgorithm::step() {
 	SensorInformation s_i = m_sensor->sense();
-
-	int count_walls = 0;
-	for (int i = 0; i < 4; i++) // count how much walls surrounding the current location
-	{
-		if (s_i.isWall[i]){
-			count_walls++;
-		}
+	int i = rand() % 5;
+	while (i != (int)Direction::Stay && s_i.isWall[i]){
+		i = rand() % 5;
 	}
-	mt19937 rng;
-	rng.seed(random_device()());
-	uniform_int_distribution<mt19937::result_type> rnd(0, 4 - count_walls); // choose randomly between all valid directions
-
-	int choice = rnd(rng);
-	int tmp = 0;
-	for (int i = 0; i < 4; i++)
-	{
-		if (s_i.isWall[i]){
-			continue;
-		}
-		if (tmp == choice){
-			Direction d = (Direction)(i);
-			cout << i << endl;
-			return d;
-		}
-		tmp++;
-	}/*
-	 srand(time(NULL));
-	 int i = rand() % 5;
-	 while (i != (int)Direction::Stay && s_i.isWall[i]){
-	 i = rand() % 5;
-	 }*/
-
-	return (Direction::Stay);
+	return (Direction)i;
 }
 
 House::~House(){
@@ -429,22 +401,15 @@ House** get_houses(char* path) {
 		fin.open(result[i]);
 		getline(fin, name); // getting short name
 		getline(fin, desc); // getting long description
-		getline(fin,line);
+		getline(fin, line);
 		r = atoi(line.c_str()); // getting r
-		getline(fin,line);
+		getline(fin, line);
 		c = atoi(line.c_str()); // getting c
 		matrix = new string[r]; // deleted in the destructor of House
 		for (int j = 0; j < r && getline(fin, line); j++)
 		{
 			matrix[j] = line;
-			cout << line << "reading" << endl;
-			index = line.find("D"); // finding whether the docking station is in this line
-			if (index != string::npos){
-				docking.first = j;
-				docking.second = index;
-				found_docking++;
-			}
-			cout << found_docking << "dokkkkkkkk" << endl;
+			found_docking += count(matrix[j].begin(), matrix[j].end(), 'D');
 		}
 		fix_house_matrix(matrix, r, c, found_docking);
 		if ((found_docking == 0) || (found_docking > 1)){
@@ -457,6 +422,13 @@ House** get_houses(char* path) {
 			delete[] house_arr;
 			delete[] matrix;
 			return NULL;
+		}
+		for (int j = 0; j < r; j++){
+			index = matrix[j].find("D"); // finding whether the docking station is in this line
+			if (index != string::npos){
+				docking.first = j;
+				docking.second = index;
+			}
 		}
 		house_arr[i] = new House(name, desc, r, c, docking, matrix); // deleted in the end of main()
 	}
@@ -473,11 +445,6 @@ void fix_house_matrix(string *matrix, int rows, int cols, int& found_docking){
 	string empty_str(cols, ' ');
 	//first - check if all rows and columns are complete
 	//if not- complete them with ' '
-	for (int k = 0; k < rows; k++)
-	{
-		cout << matrix[k].c_str() << endl;
-	}
-
 	for (int i = 0; i < rows; i++)
 	{
 		if (matrix[i].empty()){
@@ -487,29 +454,19 @@ void fix_house_matrix(string *matrix, int rows, int cols, int& found_docking){
 			matrix[i].append((cols - matrix[i].size()), ' ');
 		}
 	}
-	cout << found_docking << "in my func" << endl;
 	//second - check bounderis to be 'W', if 'D' has overwrite, change found_docking to br false
 	for (int j = 0; j < rows; j++)
 	{
 		if (j == 0 || (j == rows - 1)){
-			if (strstr(matrix[j].c_str(), docking_str.c_str())){
-				found_docking--;
-				cout << "here we delete " << j << " index, " << matrix[j].c_str() << endl;
-				cout << "this is '0' " << matrix[0].c_str() << endl;
-				cout << "this is '1' " << matrix[1].c_str() << endl;
-
-
-			}
+			//if (strstr(matrix[j].c_str(), docking_str.c_str())){
+			//	found_docking--;
+			//}
+			found_docking -= count(matrix[j].begin(), matrix[j].end(), 'D');
 			matrix[j] = wall_line;
 		}
 		else{
 			if ((matrix[j].at(0) == 'D') || (matrix[j].at(cols - 1) == 'D')){
 				found_docking--;
-				cout << "this is '0' " << matrix[j].at(0) << endl;
-				cout << "this is '"<<cols-1<<"' " << matrix[j].at(0) << endl;
-
-				cout << "here we delete2 " << j << " index, " << matrix[j].c_str() << endl;
-
 			}
 			if (matrix[j].at(0) != 'W'){
 				matrix[j].replace(0, 1, wall_str);
@@ -519,8 +476,6 @@ void fix_house_matrix(string *matrix, int rows, int cols, int& found_docking){
 			}
 		}
 	}
-	cout << found_docking << "in my func out" << endl;
-
 }
 
 // create a house hard coded --- for ex1 only
@@ -553,7 +508,7 @@ House* create_house_hard_coded() {
 		delete[] matrix;
 		return NULL;
 	}
-	return new House("Simple0", "2 Bedrooms + Kitchen Isle", rows, cols, pair<int, int>(1, 5), matrix); // deleted in the end of main()
+	return new House("Simple1", "2 Bedrooms + Kitchen Isle", rows, cols, pair<int, int>(1, 5), matrix); // deleted in the end of main()
 }
 
 //main function, initialize config arguments, and given houses descriptions,
@@ -576,9 +531,8 @@ int main(int argc, char* argv[])
 	// ----------------------------------------
 	House** house_arr;
 
-	if ((argc > 2 && !strcmp(argv[1], "-config")) || (argc>2 && !strcmp(argv[2], "-config")) || (argc > 4 && !strcmp(argv[3], "-config")) ||
+	if ((argc > 2 && !strcmp(argv[1], "-config")) || (argc > 2 && !strcmp(argv[2], "-config")) || (argc > 4 && !strcmp(argv[3], "-config")) ||
 		(argc == 4 && !strcmp(argv[2], "-config")) || (argc == 4 && !strcmp(argv[3], "-config"))){// if config.ini were given to us in the command line argumentss
-
 		int config_path_cmd_index = 0;
 		if (argc > 2 && !strcmp(argv[1], "-config") && strcmp(argv[2], "-house_path")) config_path_cmd_index = 2;
 		else if (argc > 4 && !strcmp(argv[3], "-config")) config_path_cmd_index = 4;
@@ -600,6 +554,12 @@ int main(int argc, char* argv[])
 		else{
 			config = get_configurations("."); // get configurations from the working directory
 		}
+		if (config.empty()){
+			return 1;
+		}
+	}
+	else {
+		config = get_configurations("."); // get configurations from the working directory
 		if (config.empty()){
 			return 1;
 		}
@@ -661,8 +621,8 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 	}
-//jfjhfj
-//	jgvdskjvds
+
+	srand(time(NULL)); // initiate a seed for the random algorithm
 	Simulator sim(config, house_arr, num_of_houses, num_of_algorithms);
 	bool winner = false, about_to_finish = false;
 	int num_steps_after_winning = 0;
@@ -717,7 +677,7 @@ int main(int argc, char* argv[])
 	{
 		for (int j = 0; j < num_of_houses; j++)
 		{
-			cout << "[" << house_arr[j]->get_house_short_name() << "]\t" << score_matrix[i][j] << endl;
+			cout << score_matrix[i][j] << endl;
 		}
 	}
 

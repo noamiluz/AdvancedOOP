@@ -111,7 +111,7 @@ public:
 		m_docking_station(docking_station), m_house_matrix(house_matrix), m_sum_dirt(count_dirt()) {}
 
 	~House();
-	
+
 	House(const House&) = delete;
 	House& operator=(const House&) = delete;
 
@@ -160,8 +160,8 @@ class Robot{
 public:
 
 	Robot(int init_battary_level, AbstractAlgorithm* algorithm, House* house, Sensor* sensor) :
-	 	m_algorithm(algorithm), m_house(house), m_sensor(sensor), m_curr_battary_level(init_battary_level), m_is_active(true),
-		m_this_num_of_steps(0),	m_dirt_collected(0), m_position_in_competition(0), m_is_valid(true) { }
+		m_algorithm(algorithm), m_house(house), m_sensor(sensor), m_curr_battary_level(init_battary_level), m_is_active(true),
+		m_this_num_of_steps(0), m_dirt_collected(0), m_position_in_competition(0), m_is_valid(true) { }
 
 	~Robot(){
 		delete m_algorithm;
