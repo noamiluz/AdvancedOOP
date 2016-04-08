@@ -46,7 +46,7 @@ public:
 
 
 class OurAlgorithm : public AbstractAlgorithm{
-	AbstractSensor* m_sensor;
+	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
 
 public:
@@ -80,7 +80,7 @@ public:
 
 	}
 
-	AbstractSensor* get_sensor(){
+	const AbstractSensor* get_sensor(){
 		return m_sensor;
 	}
 };
