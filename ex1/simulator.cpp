@@ -124,8 +124,10 @@ void Simulator::init_robots_matrix(House** house_arr) {
 
 	for (int i = 0; i < m_num_of_algorithms; i++) {
 		m_robots_matrix[i] = new Robot*[m_num_of_houses];
-		for (int j = 0; j < m_num_of_houses; j++) {		
-			m_robots_matrix[i][j] = new Robot(m_config["BatteryCapacity"], new House(*house_arr[j])); 
+		for (int j = 0; j < m_num_of_houses; j++) {	
+			House* robot_house = new House(*(house_arr[j]));
+
+			m_robots_matrix[i][j] = new Robot(m_config["BatteryCapacity"], robot_house);
 			// new Robot is deleted in the destructor of Simulator, new House is deleted in the destructor of Robot
 		}
 	}
@@ -507,7 +509,7 @@ int main(int argc, char* argv[])
 
 	// --- const variables just for ex1 !! ---- 
 	const int num_of_houses = 1;
-	const int num_of_algorithms = 1;
+	const int num_of_algorithms = 4;
 	// ----------------------------------------
 	House** house_arr;
 
@@ -542,6 +544,12 @@ int main(int argc, char* argv[])
 		config = get_configurations("."); // get configurations from the working directory
 		if (config.empty()){
 			return 1;
+			//for debug in windows
+			//config.insert({ "MaxSteps", 1200 });
+			//config.insert({ "MaxStepsAfterWinner", 200 });
+			//config.insert({ "BatteryCapacity", 400 });
+			//config.insert({ "BatteryConsumptionRate", 1 });
+			//config.insert({ "BatteryRechargeRate", 20 });
 		}
 	}
 
@@ -606,11 +614,18 @@ int main(int argc, char* argv[])
 
 	// building sensors
 	Sensor** sensor_arr = new Sensor*[num_of_algorithms];
-	sensor_arr[0] = new Sensor();
-	
+	for (int i = 0; i < num_of_algorithms; i++)
+	{
+		sensor_arr[i] = new Sensor();
+	}
+
 	// building algorithms
 	AbstractAlgorithm** algorithm_arr = new AbstractAlgorithm*[num_of_algorithms];
 	algorithm_arr[0] = new OurAlgorithm(*sensor_arr[0], config);
+	algorithm_arr[1] = new EastPrefAlgorithm(*sensor_arr[1], config);
+	algorithm_arr[2] = new WestPrefAlgorithm(*sensor_arr[2], config);
+	algorithm_arr[3] = new SouthPrefAlgorithm(*sensor_arr[3], config);
+
 
 	// building simulator
 	Simulator sim(config, algorithm_arr, sensor_arr, num_of_houses, num_of_algorithms, house_arr);
@@ -688,12 +703,7 @@ int main(int argc, char* argv[])
 	delete[] algorithm_arr;
 
 	
-	// delete sensors array
-
-	//for (int i = 0; i < num_of_algorithms; ++i){
-	//	delete sensor_arr[i];
-	//}
-
+	// delete sensor array pointer only - all sensor are being deleted in algorithm destructor
 	delete[] sensor_arr;
 
 	// delete score_matrix
@@ -702,8 +712,57 @@ int main(int argc, char* argv[])
 	}
 	delete[] score_matrix;
 
-
 	return 0;
 }
 
 
+// implenentionn if the three algorithms for ex2 - temporary located here
+//enum class Direction { East, West, South, North, Stay
+
+// step is called by the simulation for each time unit
+Direction EastPrefAlgorithm::step() {
+	SensorInformation s_i = m_sensor->sense();
+	if (s_i.dirtLevel > 0){// current position still dirty
+		return Direction::Stay;
+	}
+	else{// current position is clean
+		// go to the following direction, in case there isn't a wall there by this order of prefernce: East, West, South, North
+		for (int i = 0; i < 4; i++)
+		{
+			if (!s_i.isWall[i]) return (Direction)i;
+		}		
+		return Direction::Stay;//never should get here
+	}
+}
+
+// step is called by the simulation for each time unit
+Direction WestPrefAlgorithm::step() {
+	SensorInformation s_i = m_sensor->sense();
+	if (s_i.dirtLevel > 0){// current position still dirty
+		return Direction::Stay;
+	}
+	else{// current position is clean
+		// go to the following direction, in case there isn't a wall there by this order of prefernce: West, South, North, East
+		for (int i = 1; i < 5; i++)
+		{
+			if (!s_i.isWall[i%4]) return (Direction)i;
+		}
+		return Direction::Stay;//never should get here
+	}
+}
+
+// step is called by the simulation for each time unit
+Direction SouthPrefAlgorithm::step() {
+	SensorInformation s_i = m_sensor->sense();
+	if (s_i.dirtLevel > 0){// current position still dirty
+		return Direction::Stay;
+	}
+	else{// current position is clean
+		// go to the following direction, in case there isn't a wall there by this order of prefernce: South, North, East, West
+		for (int i = 2; i < 6; i++)
+		{
+			if (!s_i.isWall[i % 4]) return (Direction)i;
+		}
+		return Direction::Stay;//never should get here
+	}
+}

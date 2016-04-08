@@ -336,3 +336,119 @@ House** get_houses(char* path);
 // check if house matrix has boundaries, otherwise, add walls. changing 
 //found_docking to false in case docking station is at the the end
 void fix_house_matrix(string *matrix, int rows, int cols, int& found_docking);
+
+
+// ex2 #1 algorithm
+class EastPrefAlgorithm : public AbstractAlgorithm{
+	const AbstractSensor* m_sensor;
+	map<string, int> m_config; // configuration properties
+
+public:
+
+	EastPrefAlgorithm(const AbstractSensor& sensor, map<string, int>& config) {
+		setSensor(sensor);
+		setConfiguration(config);
+	}
+
+	~EastPrefAlgorithm() {
+		delete m_sensor;
+	}
+
+	// setSensor is called once when the Algorithm is initialized
+	virtual void setSensor(const AbstractSensor& sensor) {
+		m_sensor = const_cast<AbstractSensor*>(&sensor);
+	}
+
+	// setConfiguration is called once when the Algorithm is initialized - see below 
+	virtual void setConfiguration(map<string, int> config){
+		m_config = config;
+	}
+
+	// step is called by the simulation for each time unit
+	virtual Direction step();
+
+	// this method is called by the simulation either when there is a winner or 
+	// when steps == MaxSteps - MaxStepsAfterWinner 
+	// parameter stepsTillFinishing == MaxStepsAfterWinner 
+	virtual void aboutToFinish(int stepsTillFinishing){
+
+	}
+
+};
+
+// ex2 #2 algorithm
+class WestPrefAlgorithm : public AbstractAlgorithm{
+	const AbstractSensor* m_sensor;
+	map<string, int> m_config; // configuration properties
+
+public:
+
+	WestPrefAlgorithm(const AbstractSensor& sensor, map<string, int>& config) {
+		setSensor(sensor);
+		setConfiguration(config);
+	}
+
+	~WestPrefAlgorithm() {
+		delete m_sensor;
+	}
+
+	// setSensor is called once when the Algorithm is initialized
+	virtual void setSensor(const AbstractSensor& sensor) {
+		m_sensor = const_cast<AbstractSensor*>(&sensor);
+	}
+
+	// setConfiguration is called once when the Algorithm is initialized - see below 
+	virtual void setConfiguration(map<string, int> config){
+		m_config = config;
+	}
+
+	// step is called by the simulation for each time unit
+	virtual Direction step();
+
+	// this method is called by the simulation either when there is a winner or 
+	// when steps == MaxSteps - MaxStepsAfterWinner 
+	// parameter stepsTillFinishing == MaxStepsAfterWinner 
+	virtual void aboutToFinish(int stepsTillFinishing){
+
+	}
+
+};
+
+
+// ex2 #3 algorithm
+class SouthPrefAlgorithm : public AbstractAlgorithm{
+	const AbstractSensor* m_sensor;
+	map<string, int> m_config; // configuration properties
+
+public:
+
+	SouthPrefAlgorithm(const AbstractSensor& sensor, map<string, int>& config) {
+		setSensor(sensor);
+		setConfiguration(config);
+	}
+
+	~SouthPrefAlgorithm() {
+		delete m_sensor;
+	}
+
+	// setSensor is called once when the Algorithm is initialized
+	virtual void setSensor(const AbstractSensor& sensor) {
+		m_sensor = const_cast<AbstractSensor*>(&sensor);
+	}
+
+	// setConfiguration is called once when the Algorithm is initialized - see below 
+	virtual void setConfiguration(map<string, int> config){
+		m_config = config;
+	}
+
+	// step is called by the simulation for each time unit
+	virtual Direction step();
+
+	// this method is called by the simulation either when there is a winner or 
+	// when steps == MaxSteps - MaxStepsAfterWinner 
+	// parameter stepsTillFinishing == MaxStepsAfterWinner 
+	virtual void aboutToFinish(int stepsTillFinishing){
+
+	}
+
+};
