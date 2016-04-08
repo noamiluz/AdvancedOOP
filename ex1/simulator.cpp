@@ -715,10 +715,21 @@ void Main::score_simulation(Simulator& sim, map<string, int>& config, int num_of
 	delete[] score_matrix;
 }
 
+// trim title in the score matrix to be up to 9 chars and aligned to left
+string Main::trim_title(string& title){
+	string temp(title, 0, 9);
+	return temp + string(10 - temp.length(), ' ');
+}
+
 
 // prints the score matrix according to given format.
 // prints errors after that, if exist.
 void Main::print_score_and_errors(Simulator& sim, int** score_matrix){
+
+	const int num_of_chars_cols = 14 + 11 * (sim.get_num_of_houses() + 1) + 1;
+	const int num_of_chars_rows = 2 * (sim.get_num_of_algorithms() + 1) + 1;
+	string dashes_line(num_of_chars_cols, '-');
+
 
 }
 

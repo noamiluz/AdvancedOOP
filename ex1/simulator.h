@@ -292,6 +292,15 @@ public:
 	vector<AbstractAlgorithm*> get_algorithm_arr(){
 		return m_algorithm_arr;
 	}
+
+	const int get_num_of_houses() const{
+		return m_num_of_houses;
+	}
+
+	const int get_num_of_algorithms() const {
+		return m_num_of_algorithms;
+	}
+
 	// simulate a single steps of the simulation:
 	// iterate over all houses, for each house runs a single steps of all the algorithms (in parallel).
 	// if the flag about_to_finish == true, the function aboutToFinish(int stepsTillFinishing) of each algorithm is called.
@@ -338,6 +347,8 @@ public:
 class Main {
 
 	vector<string> error_list; // error list to be printed at the end
+	vector<string> house_names; // SORTED names of VALID houses files without '.house'
+	vector<string> algorithm_names; // SORTED names of VALID algorithms files without '.so'
 	
 public:
 
@@ -372,6 +383,9 @@ public:
 	// calculates the score matrix and prints it
 	void score_simulation(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms);
 
+	// trim title in the score matrix to be up to 9 chars and aligned to left
+	string Main::trim_title(string& title);
+	
 	// prints the score matrix according to given format.
 	// prints errors after that, if exist.
 	void Main::print_score_and_errors(Simulator& sim, int** score_matrix);
