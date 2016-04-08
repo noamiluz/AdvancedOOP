@@ -10,7 +10,60 @@
 
 using namespace std;
 
-class House;
+
+class House{
+	const string m_short_name;
+	const int m_max_steps;
+	const int m_rows;
+	const int m_cols;
+	const pair<int, int> m_docking_station;
+	string* m_house_matrix;
+	const int m_sum_dirt; // sum of the dirt in the house
+
+	// Returns the sum of all the dust in the house. <private method, called once by the constructor>
+	int count_dirt() const;
+
+public:
+	House(const string& short_name, const int& max_steps, const int& rows, const int& cols,
+		const pair<int, int>& docking_station, string* house_matrix) :
+		m_short_name(short_name), m_max_steps(max_steps), m_rows(rows), m_cols(cols),
+		m_docking_station(docking_station), m_house_matrix(house_matrix), m_sum_dirt(count_dirt()) {}
+
+	~House();
+
+	House(const House& house);
+
+	House& operator=(const House& house) = delete;
+
+	string* get_house_matrix() const{
+		return m_house_matrix;
+	}
+
+	const int& get_house_matrix_rows() const{
+		return m_rows;
+	}
+
+	const int& get_house_matrix_cols() const{
+		return m_cols;
+	}
+
+	const pair<int, int>& get_house_docking_station() const{
+		return m_docking_station;
+	}
+
+	const string get_house_short_name() const {
+		return m_short_name;
+	}
+
+	const int get_max_steps() const{
+		return m_max_steps;
+	}
+
+	const int get_sum_dirt_in_house() const {
+		return m_sum_dirt;
+	}
+};
+
 
 class Sensor : public AbstractSensor{
 	House* m_house;
@@ -82,59 +135,6 @@ public:
 
 	const AbstractSensor* get_sensor(){
 		return m_sensor;
-	}
-};
-
-class House{
-	const string m_short_name;
-	const string m_long_description;
-	const int m_rows;
-	const int m_cols;
-	const pair<int, int> m_docking_station;
-	string* m_house_matrix;
-	const int m_sum_dirt; // sum of the dirt in the house
-
-	// Returns the sum of all the dust in the house. <private method, called once by the constructor>
-	int count_dirt() const;
-
-public:
-	House(const string& short_name, const string& long_description, const int& rows, const int& cols,
-		const pair<int, int>& docking_station, string* house_matrix) :
-		m_short_name(short_name), m_long_description(long_description), m_rows(rows), m_cols(cols),
-		m_docking_station(docking_station), m_house_matrix(house_matrix), m_sum_dirt(count_dirt()) {}
-
-	~House();
-
-	House(const House& house);
-
-	House& operator=(const House& house) = delete;
-
-	string* get_house_matrix() const{
-		return m_house_matrix;
-	}
-
-	const int& get_house_matrix_rows() const{
-		return m_rows;
-	}
-
-	const int& get_house_matrix_cols() const{
-		return m_cols;
-	}
-
-	const pair<int, int>& get_house_docking_station() const{
-		return m_docking_station;
-	}
-
-	const string get_house_short_name() const {
-		return m_short_name;
-	}
-
-	const string get_house_long_description() const {
-		return m_long_description;
-	}
-
-	const int get_sum_dirt_in_house() const {
-		return m_sum_dirt;
 	}
 };
 
@@ -239,18 +239,17 @@ class Simulator{
 
 	int m_steps; // num of steps the simulator did
 	Robot*** m_robots_matrix; // matrix of pointers to Robots. each row represents an algorithm and each column represents a house
-	AbstractAlgorithm** m_algorithm_arr;
-	Sensor** m_sensor_arr;
+	vector<AbstractAlgorithm*> m_algorithm_arr;
+	vector<Sensor*> m_sensor_arr;
 	const int m_num_of_houses;
 	const int m_num_of_algorithms;
 	int m_winner_num_steps; // num of steps the winner has done during the simulation. (if there is no winner, remains MaxSteps)
 	int m_not_active; // num of robots that are not active any more
 
 public:
-	Simulator(map<string, int>& config, AbstractAlgorithm** algorithm_arr,Sensor** sensor_arr, const int& num_of_houses,
-		const int& num_of_algorithms, House** house_arr) :
-		m_config(config), m_steps(0), m_robots_matrix(nullptr), m_algorithm_arr(algorithm_arr),m_sensor_arr(sensor_arr),
-		m_num_of_houses(num_of_houses), m_num_of_algorithms(num_of_algorithms), m_winner_num_steps(config["MaxSteps"]), m_not_active(0) {
+	Simulator(map<string, int>& config, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr, vector<House*>& house_arr) :
+		m_config(config), m_steps(0), m_robots_matrix(nullptr), m_algorithm_arr(algorithm_arr), m_sensor_arr(sensor_arr),
+		m_num_of_houses(house_arr.size()), m_num_of_algorithms(algorithm_arr.size()), m_winner_num_steps(-1), m_not_active(0) {
 		init_robots_matrix(house_arr);
 	}
 
@@ -260,7 +259,7 @@ public:
 	Simulator& operator=(const Simulator&) = delete;
 
 	// Initiate the field m_robots_matrix 
-	void init_robots_matrix(House** house_arr);
+	void init_robots_matrix(const vector<House*>& house_arr);
 
 	const int get_steps() const{
 		return m_steps;
@@ -286,11 +285,11 @@ public:
 		m_not_active++;
 	}
 
-	Sensor** get_sensor_arr(){
+	vector<Sensor*> get_sensor_arr(){
 		return m_sensor_arr;
 	}
 
-	AbstractAlgorithm** get_algorithm_arr(){
+	vector<AbstractAlgorithm*> get_algorithm_arr(){
 		return m_algorithm_arr;
 	}
 	// simulate a single steps of the simulation:
@@ -312,6 +311,74 @@ public:
 			- (sum_dirt_in_house - dirt_collected) * 3
 			+ (is_back_in_docking ? 50 : -200));
 	}
+};
+
+class FileParser {
+
+public:
+
+	// returns vector of the full paths to all the files in the 'path_of_directory' directory which
+	// their names contains the suffix 'suffix' 
+	// path_of_directory could be relative or absolute (and with or without '/')
+	vector<string> get_file_paths(const string& path_of_directory, const string&& suffix);
+
+	// receive a full path to a file and returns its base name
+	string get_file_name(const string& full_path);
+
+	// splits a string according to a delimiter. (from recitation)
+	vector<string> split(const string &s, char delim);
+
+	// cleans a string from unwanted whitespaces. (from recitation)
+	string trim(string& str);
+
+	// given a line read from the configuration file, update the configuration map. (from recitation)
+	void processLine(const string& line, map<string, int> &config);
+};
+
+class Main {
+
+	vector<string> error_list; // error list to be printed at the end
+	
+public:
+
+	// prints error list
+	void print_errors(vector<string>& error_list);
+
+	// checking if the content of configuration file is valid. If not, print message and return false.
+	bool check_configurations_validity(const map<string, int>& config);
+
+	// read from configuration file and return the configurations map
+	map<string, int> get_configurations(const string path);
+
+	// read from .house files and parse them into a house array;
+	vector<House*> get_houses(string path);
+
+	//function for completing miising cells in house matrix by ' '.
+	//In addition, surranding the matrix with wall if needed. Also,
+	//returns how many docking stations in the house, AFTER fixing
+	int fix_house_matrix(string *matrix, int rows, int cols);
+
+	// load .so files that represent algorithms
+	// creates vector of algorithms (one of each type), and vector of sensors (one for every algorithm)
+	tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> get_algorithms_and_sensors(string path);
+
+	// parse the command line arguments
+	// returns a tuple <config_path, house_path, algorithm_path>
+	tuple<string, string, string> command_line_arguments(int argc, char* argv[]);
+
+	// simulate the simulator
+	void simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms);
+
+	// calculates the score matrix and prints it
+	void score_simulation(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms);
+
+	// prints the score matrix according to given format.
+	// prints errors after that, if exist.
+	void Main::print_score_and_errors(Simulator& sim, int** score_matrix);
+
+	// freeing all the memory left to free in the program
+	void deleting_memory(vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
+		int num_of_houses, int num_of_algorithms);
 };
 
 // returns vector of the full paths to all the files in the 'path_of_directory' directory which their names contains the suffix 'suffix' 

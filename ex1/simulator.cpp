@@ -12,8 +12,9 @@
 
 #include "simulator.h"
 
-using namespace std;
+#define PRINT_USAGE cout << "Usage: simulator [­config <config path>] [­house_path <house path>] [­algorithm_path <algorithm path>]" << endl
 
+using namespace std;
 
 
 // returns the sensor's information of the current location of the robot
@@ -76,12 +77,11 @@ House::~House(){
 }
 
 House::House(const House& house) :
-m_short_name(house.m_short_name), m_long_description(house.m_long_description), m_rows(house.m_rows), m_cols(house.m_cols),
+m_short_name(house.m_short_name), m_max_steps(house.m_max_steps), m_rows(house.m_rows), m_cols(house.m_cols),
 m_docking_station(house.m_docking_station), m_sum_dirt(house.m_sum_dirt){
 
 	m_house_matrix = new string[m_rows];
-	for (int i = 0; i < m_rows; i++)
-	{
+	for (int i = 0; i < m_rows; i++){
 		m_house_matrix[i] = house.m_house_matrix[i];
 	}
 
@@ -119,7 +119,7 @@ Simulator::~Simulator(){
 
 //function inits the maiin robots matrix - Initializes each robot in
 //the matrix with his specific house and algorithm.
-void Simulator::init_robots_matrix(House** house_arr) {
+void Simulator::init_robots_matrix(const vector<House*>& house_arr) {
 	m_robots_matrix = new Robot**[m_num_of_algorithms];
 
 	for (int i = 0; i < m_num_of_algorithms; i++) {
@@ -152,6 +152,11 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 			m_sensor_arr[i]->set_curr_location(cur_robot->get_curr_location());
 
 			if (!cur_robot->is_active()){ // if the robot is not active any more, continue
+				continue;
+			}
+
+			if (m_steps > cur_robot->get_house()->get_max_steps()){
+				cur_robot->set_active(false);
 				continue;
 			}
 
@@ -210,7 +215,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 				// if the robot has finished cleaning the house
 				if (cur_robot->get_dirt_collected() == cur_robot->get_house()->get_sum_dirt_in_house()){
 					cur_robot->set_position_in_competition(rank_in_competition); // update the cur_robot's position in the competition
-					if (m_winner_num_steps == m_config["MaxSteps"]) { // the first robot to finish has to update the winner_num_steps field
+					if (m_winner_num_steps == -1) { // the first robot to finish has to update the winner_num_steps field
 						m_winner_num_steps = m_steps;
 					}
 					is_someone_finished = true;
@@ -280,7 +285,7 @@ void Simulator::finish_simulation(){
 // returns vector of the full paths to all the files in the 'path_of_directory' directory which
 // their names contains the suffix 'suffix' 
 // path_of_directory could be relative or absolute (and with or without '/')
-vector<string> get_file_paths(string path_of_directory, string suffix){
+vector<string> FileParser::get_file_paths(const string& path_of_directory, const string&& suffix){
 	string str_command = "find " + path_of_directory + " -name \"" + suffix + "\" > ./\"out.txt\"";
 	const char * command = str_command.c_str();
 	system(command); // execute the command on linux. 
@@ -297,8 +302,15 @@ vector<string> get_file_paths(string path_of_directory, string suffix){
 	return paths;
 }
 
+// receive a full path to a file and returns its base name
+string FileParser::get_file_name(const string& full_path){
+	return string(find_if(full_path.rbegin(), full_path.rend(),
+		[](const char c){return c == '/'; }).base(), full_path.end());
+}
+
+
 // splits a string according to a delimiter. (from recitation)
-vector<string> split(const string &s, char delim) {
+vector<string> FileParser::split(const string &s, char delim) {
 	vector<string> elems;
 	stringstream ss(s);
 	string item;
@@ -309,14 +321,14 @@ vector<string> split(const string &s, char delim) {
 }
 
 // cleans a string from unwanted whitespaces. (from recitation)
-string trim(string& str) {
+string FileParser::trim(string& str) {
 	str.erase(0, str.find_first_not_of(' '));       //prefixing spaces
 	str.erase(str.find_last_not_of(' ') + 1);         //suffixing spaces
 	return str;
 }
 
 // given a line read from the configuration file, update the configuration map. (from recitation)
-void processLine(const string& line, map<string, int> &config)
+void FileParser::processLine(const string& line, map<string, int> &config)
 {
 	vector<string> tokens = split(line, '=');
 	if (tokens.size() != 2)
@@ -326,85 +338,144 @@ void processLine(const string& line, map<string, int> &config)
 	config[trim(tokens[0])] = stoi(trim(tokens[1]));
 }
 
+
+// prints error list
+void Main::print_errors(vector<string>& error_list){
+	for (int i = 0; i < error_list.size(); i++)
+	{
+		cout << error_list[i] << endl;
+	}
+}
+
+// checking if the content of configuration file is valid. If not, print message and return false.
+bool Main::check_configurations_validity(const map<string, int>& config){
+	string temp;
+	int count_missing = 0;
+	if (config.find("MaxStepsAfterWinner") == config.end()){
+		count_missing++;
+		temp += "MaxStepsAfterWinner, ";
+	} 
+	if (config.find("BatteryCapacity") == config.end()){
+		count_missing++;
+		temp += "BatteryCapacity, ";
+	}
+	if (config.find("BatteryConsumptionRate") == config.end()){
+		count_missing++;
+		temp += "BatteryConsumptionRate, ";
+	}
+	if (config.find("BatteryRechargeRate") == config.end()){
+		count_missing++;
+		temp += "BatteryRechargeRate, ";
+	}
+	if (count_missing == 0){
+		return true;
+	}
+	cout << "config.ini missing " << count_missing << " parameter(s): " << string(temp, 0, temp.length() - 2) << endl;
+	return false;
+}
+
+
 // read from configuration file and return the configurations map
-map<string, int> get_configurations(string path){
+map<string, int> Main::get_configurations(const string path){
+	FileParser fp;
 	map<string, int> config;
+	map<string, int> empty_config;
 	string full_path;
-	vector<string> result = get_file_paths(path, "config.ini");
+	// getting the full path
+	vector<string> result = fp.get_file_paths(path, "config.ini");
 	if (result.empty()){
-		if ((result = get_file_paths(".", "config.ini")).empty()){
-			cout << "ERROR: config.ini does not exist" << endl;
-			return config;
-		}
-		else {
-			full_path = result[0];
-		}
+		PRINT_USAGE;
+		return empty_config;
 	}
 	else {
 		full_path = result[0];
 	}
+
+	// read from file
 	ifstream fin;
 	fin.open(full_path);
 	if (!fin.is_open()){
-		cout << "ERROR: the configuration file path " << full_path << " is incorrect." << endl;
-		return config;
+		cout << "config.ini exists in '" << full_path << "' but cannot be opened" << endl;
+		return empty_config;
 	}
-
 	string line;
 	while (getline(fin, line)){
-		processLine(line, config);
+		fp.processLine(line, config);
 	}
 	fin.close();
+	if (!check_configurations_validity(config)){
+		return empty_config;
+	}
 	return config;
 }
 
 // read from .house files and parse them into a house array;
-House** get_houses(char* path) {
-	string full_path;
-	vector<string> result = get_file_paths(path, "*.house");
+vector<House*> Main::get_houses(string path) {
+	FileParser fp;
+	vector<House*> house_arr;
+	vector<House*> empty;
 
+	// getting the full path
+	vector<string> result = fp.get_file_paths(path, "*.house");
 	if (result.empty()){
-		if ((result = get_file_paths(".", "*.house")).empty()){
-			cout << "ERROR: .house files do not exist" << endl << "Terminating the program." << endl;
-			return NULL;
-		}
+		PRINT_USAGE;
+		return empty;
 	}
+
 	int num_of_houses = result.size();
-	House ** house_arr = new House*[num_of_houses]; // deleted in the end of main()
+	vector<House*> house_arr; // deleted in the end of main()
 	ifstream fin;
-	string name, desc, line;
-	int r, c;
+	string name, line;
+	int r, c, max_steps;
 	string* matrix;
 	pair<int, int> docking;
 	string::size_type index;
-	int found_docking = 0;
 	for (int i = 0; i < num_of_houses; i++)
 	{
 		fin.open(result[i]);
-		getline(fin, name); // getting short name
-		getline(fin, desc); // getting long description
+		if (!fin.is_open()){
+			error_list.push_back(fp.get_file_name(result[i]) + ": cannot open file");
+			continue;
+		}
+		getline(fin, name); // getting name
+		getline(fin, line); 
+		max_steps = atoi(line.c_str()); // getting max_steps
+		if (max_steps < 0){
+			error_list.push_back(fp.get_file_name(result[i]) + ": line number 2 in house file shall be a positive number, found: " + line);
+			continue;
+		}
 		getline(fin, line);
 		r = atoi(line.c_str()); // getting r
+		if (r < 0){
+			error_list.push_back(fp.get_file_name(result[i]) + ": line number 3 in house file shall be a positive number, found: " + line);
+			continue;
+		}
 		getline(fin, line);
 		c = atoi(line.c_str()); // getting c
+		if (c < 0){
+			error_list.push_back(fp.get_file_name(result[i]) + ": line number 4 in house file shall be a positive number, found: " + line);
+			continue;
+		}
+
 		matrix = new string[r]; // deleted in the destructor of House
 		for (int j = 0; j < r && getline(fin, line); j++)
 		{
-			matrix[j] = line;
-			found_docking += count(matrix[j].begin(), matrix[j].end(), 'D');
+			matrix[j] = string(line, 0, c);
+			//found_docking += count(matrix[j].begin(), matrix[j].end(), 'D');
 		}
-		fix_house_matrix(matrix, r, c, found_docking);
-		if ((found_docking == 0) || (found_docking > 1)){
-			if (found_docking == 0){
-				cout << "ERROR: couldn't find docking station in house [" << name << "]. Terminating simulation!" << endl;
+		int count_docking = fix_house_matrix(matrix, r, c);
+		if (count_docking == 0 || count_docking > 1){
+			if (count_docking == 0){
+				error_list.push_back(fp.get_file_name(result[i]) + ": missing docking station (no D in house)");
 			}
-			else if (found_docking > 1){
-				cout << "ERROR: entered " << found_docking << " docking stations, in house [" << name << "], expecting 1. Terminating simulation!" << endl;
+			else if (count_docking > 1){
+				error_list.push_back(fp.get_file_name(result[i]) + ": too many docking stations (more than one D in house)");
 			}
-			delete[] house_arr;
 			delete[] matrix;
-			return NULL;
+			continue;
 		}
+
+		// the house is valid. There is one docking station
 		for (int j = 0; j < r; j++){
 			index = matrix[j].find("D"); // finding whether the docking station is in this line
 			if (index != string::npos){
@@ -412,15 +483,23 @@ House** get_houses(char* path) {
 				docking.second = index;
 			}
 		}
-		house_arr[i] = new House(name, desc, r, c, docking, matrix); // deleted in the end of main()
+		house_arr.push_back(new House(name, max_steps, r, c, docking, matrix)); // deleted in the end of main()
 	}
+
+	if (house_arr.empty()){ // ALL houses are invalid
+		cout << "All house files in target folder '" << path << "' cannot be opened or are invalid :" << endl;
+		print_errors(error_list);
+		return empty;
+	}
+
 	return house_arr;
 }
 
 //function for completing miising cells in house matrix by ' '.
 //In addition, surranding the matrix with wall if needed. Also,
-// update the 'found_docking' varible in a csee that a docking station was overwriten.
-void fix_house_matrix(string *matrix, int rows, int cols, int& found_docking){
+//returns how many docking stations in the house, AFTER fixing
+static int fix_house_matrix(string *matrix, int rows, int cols){
+	int count_docking = 0;
 	string docking_str("D");
 	string wall_str("W");
 	string wall_line(cols, 'W');
@@ -436,214 +515,157 @@ void fix_house_matrix(string *matrix, int rows, int cols, int& found_docking){
 			matrix[i].append((cols - matrix[i].size()), ' ');
 		}
 	}
-	//second - check bounderis to be 'W', if 'D' has overwrite, change found_docking to br false
+	//second - check bounderis to be 'W', if 'D' has overwrite, change found_docking
 	for (int j = 0; j < rows; j++)
 	{
 		if (j == 0 || (j == rows - 1)){
-			//if (strstr(matrix[j].c_str(), docking_str.c_str())){
-			//	found_docking--;
-			//}
-			found_docking -= count(matrix[j].begin(), matrix[j].end(), 'D');
 			matrix[j] = wall_line;
 		}
 		else{
-			if ((matrix[j].at(0) == 'D') || (matrix[j].at(cols - 1) == 'D')){
-				found_docking--;
-			}
 			if (matrix[j].at(0) != 'W'){
 				matrix[j].replace(0, 1, wall_str);
 			}
 			if (matrix[j].at(cols - 1) != 'W'){
 				matrix[j].replace((cols - 1), 1, wall_str);
 			}
+			count_docking += count(matrix[j].begin(), matrix[j].end(), 'D');
 		}
 	}
+	return count_docking;
 }
 
-// create a house hard coded --- for ex1 only
-House* create_house_hard_coded() {
-	const int rows = 8;
-	const int cols = 10;
-	int found_docking = 0;
-	string* matrix = new string[rows]; // deleted in the destructor of House
-	matrix[0] = "WWWWWWWWWW";
-	matrix[1] = "W22  DW59W";
-	matrix[2] = "W  W 1119W";
-	matrix[3] = "W WWW3 WWW";
-	matrix[4] = "W6   3W  W";
-	matrix[5] = "W78W  W  W";
-	matrix[6] = "W99W  W  D";
-	matrix[7] = "WWWWWWWWWW";
 
-	for (int i = 0; i < rows; i++){//count docking stations
-		found_docking += count(matrix[i].begin(), matrix[i].end(), 'D');
-	}
-	fix_house_matrix(matrix, rows, cols, found_docking);//complete missing cells with ' ', and surround the house with 'W'
+// load .so files that represent algorithms
+// creates vector of algorithms (one of each type), and vector of sensors (one for every algorithm)
+tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> get_algorithms_and_sensors(string path){
+	srand(time(NULL));
 
-	if ((found_docking == 0) || (found_docking > 1)){//varify that #'D' == 1
-		if (found_docking == 0){
-			cout << "ERROR: couldn't find docking station in house [simple1]. Terminating simulation!" << endl;
-		}
-		else if (found_docking > 1){
-			cout << "ERROR: entered " << found_docking << " docking stations, in house [simple1], expecting 1. Terminating simulation!" << endl;
-		}
-		delete[] matrix;
-		return NULL;
-	}
-	return new House("Simple1", "2 Bedrooms + Kitchen Isle", rows, cols, pair<int, int>(1, 5), matrix); // deleted in the end of main()
-}
-
-//main function, initialize config arguments, and given houses descriptions,
-//and run the simulator for each house and for each algorithm. Returns 0 on success, 
-//1 on failure.
-int main(int argc, char* argv[])
-{
-	map<string, int> config;
-
-	if ((argc > 5) || (argc == 5 && ((strcmp(argv[1], "-config") && strcmp(argv[1], "-house_path")) || (strcmp(argv[3], "-config") && strcmp(argv[3], "-house_path")))) ||
-		(argc > 1 && (strcmp(argv[1], "-config") && strcmp(argv[1], "-house_path"))) || (argc > 3 && (strcmp(argv[3], "-config") && strcmp(argv[3], "-house_path") &&
-		strcmp(argv[2], "-config") && strcmp(argv[2], "-house_path")))){
-		cout << "Usage: [-config [<config_file_location>]] [-house_path <houses_path_location>]." << endl;
-		return 1;
-	}
-
-	// --- const variables just for ex1 !! ---- 
-	const int num_of_houses = 1;
-	const int num_of_algorithms = 4;
-	// ----------------------------------------
-	House** house_arr;
-
-	if ((argc > 2 && !strcmp(argv[1], "-config")) || (argc > 2 && !strcmp(argv[2], "-config")) || (argc > 4 && !strcmp(argv[3], "-config")) ||
-		(argc == 4 && !strcmp(argv[2], "-config")) || (argc == 4 && !strcmp(argv[3], "-config"))){// if config.ini were given to us in the command line argumentss
-		int config_path_cmd_index = 0;
-		if (argc > 2 && !strcmp(argv[1], "-config") && strcmp(argv[2], "-house_path")) config_path_cmd_index = 2;
-		else if (argc > 4 && !strcmp(argv[3], "-config")) config_path_cmd_index = 4;
-		else if (argc == 4 && !strcmp(argv[2], "-config") && strcmp(argv[3], "-house_path")) config_path_cmd_index = 3;
-		//else if (argc > 2 && !strcmp(argv[2], "-config")) config_path_cmd_index = 0;
-
-		if (config_path_cmd_index != 0){
-			if (argv[config_path_cmd_index][strlen(argv[config_path_cmd_index]) - 1] != '/'){//adding the '/' char, if doesnt exists
-				string temp_path(argv[config_path_cmd_index]);
-				temp_path += "/";
-				config = get_configurations(temp_path); // get configurations from the given directory
-
-			}
-			else{
-				config = get_configurations(argv[config_path_cmd_index]); // get configurations from the given directory
-			}
-
-		}
-		else{
-			config = get_configurations("."); // get configurations from the working directory
-		}
-		if (config.empty()){
-			return 1;
-		}
-	}
-	else {
-		config = get_configurations("."); // get configurations from the working directory
-		if (config.empty()){
-			return 1;
-			//for debug in windows
-			//config.insert({ "MaxSteps", 1200 });
-			//config.insert({ "MaxStepsAfterWinner", 200 });
-			//config.insert({ "BatteryCapacity", 400 });
-			//config.insert({ "BatteryConsumptionRate", 1 });
-			//config.insert({ "BatteryRechargeRate", 20 });
-		}
-	}
-
-
-	if ((argc > 2 && !strcmp(argv[1], "-house_path")) || (argc>2 && !strcmp(argv[2], "-house_path")) || (argc > 4 && !strcmp(argv[3], "-house_path"))
-		|| (argc == 4 && !strcmp(argv[2], "-house_path")) || (argc == 4 && !strcmp(argv[3], "-house_path"))) // if houses were given to us in the command line argumentss
-	{
-		int house_path_cmd_index = 0;
-		if (argc > 2 && !strcmp(argv[1], "-house_path") && strcmp(argv[2], "-config")) house_path_cmd_index = 2;
-		else if (argc > 4 && !strcmp(argv[3], "-house_path")) house_path_cmd_index = 4;
-		else if (argc == 4 && !strcmp(argv[2], "-house_path") && strcmp(argv[3], "-config")) house_path_cmd_index = 3;
-
-
-		if (house_path_cmd_index != 0){
-			if (argv[house_path_cmd_index][strlen(argv[house_path_cmd_index]) - 1] != '/'){//adding the '/' char, if doesnt exists
-				string temp_path(argv[house_path_cmd_index]);
-				temp_path += "/";
-				house_arr = get_houses(const_cast<char *>(temp_path.c_str()));
-
-			}
-			else{
-				house_arr = get_houses(argv[house_path_cmd_index]);
-			}
-
-		}
-		else{
-			house_arr = get_houses((char *)".");
-		}
-
-		if (house_arr == NULL){
-			return 1;
-		}
-	}
-	else {
-		if ((argc == 2) && !strcmp(argv[1], "-house_path")){//user doesnt entered a path 
-			house_arr = get_houses((char *)".");
-			if (house_arr == NULL){
-				return 1;
-			}
-		}
-
-		else{// create house hard coded
-			house_arr = new House*[num_of_houses]; // deleted in the end of main()
-			house_arr[0] = create_house_hard_coded();
-
-			if (house_arr[0] == NULL){//in that case, the house matrix is deleted in 'create_house_hard_coded'
-				delete[] house_arr;
-				return 1;
-			}
-		}
-
-	}
-
-	if (argc <= 2){
-		config = get_configurations("."); // get configurations from the working directory
-		if (config.empty()){
-			return 1;
-		}
-	}
-
-	srand(time(NULL)); // initiate a seed for the random algorithm
-
-	// building sensors
-	Sensor** sensor_arr = new Sensor*[num_of_algorithms];
-	for (int i = 0; i < num_of_algorithms; i++)
-	{
-		sensor_arr[i] = new Sensor();
-	}
+	// creating sensor array (one for each algorithm)
+//	Sensor** sensor_arr = new Sensor*[num_of_algorithms];
+//	for (int i = 0; i < num_of_algorithms; i++){
+//		sensor_arr[i] = new Sensor();
+//	}
 
 	// building algorithms
-	AbstractAlgorithm** algorithm_arr = new AbstractAlgorithm*[num_of_algorithms];
-	algorithm_arr[0] = new OurAlgorithm(*sensor_arr[0], config);
-	algorithm_arr[1] = new EastPrefAlgorithm(*sensor_arr[1], config);
-	algorithm_arr[2] = new WestPrefAlgorithm(*sensor_arr[2], config);
-	algorithm_arr[3] = new SouthPrefAlgorithm(*sensor_arr[3], config);
+	//AbstractAlgorithm** algorithm_arr = new AbstractAlgorithm*[4];
+	//algorithm_arr[0] = new OurAlgorithm(*sensor_arr[0], config);
+	//algorithm_arr[1] = new EastPrefAlgorithm(*sensor_arr[1], config);
+	//algorithm_arr[2] = new WestPrefAlgorithm(*sensor_arr[2], config);
+	//algorithm_arr[3] = new SouthPrefAlgorithm(*sensor_arr[3], config);
+}
+
+// parse the command line arguments
+// returns a tuple <config_path, house_path, algorithm_path>
+tuple<string, string, string> Main::command_line_arguments(int argc, char* argv[]){
+	// number of arguments has to be odd
+	if (argc % 2 == 0){
+		PRINT_USAGE;
+		return;
+	}
+	int config_index = -1, house_index = -1, algorithm_index = -1;
+	string config_path, house_path, algorithm_path;
+	int i = 1;	// starting from i=1 (excluding the name of the program)
+	while (i < argc){
+		if (argv[i] == "-config" && config_index == -1){ // if at the current there is '-config' and its the first time
+			config_index = i;
+			if (i + 1 < argc && argv[i + 1] != "-config" && argv[i + 1] != "-house_path" && argv[i + 1] != "-algorithm_path"){ // make sure that there is a path
+				config_path = argv[i + 1];
+			}
+			else {
+				PRINT_USAGE;
+				return;
+			}
+			i += 2;
+			continue;
+		}
+		if (argv[i] == "-house_path" && house_index == -1){ // if at the current there is '-house_path' and its the first time
+			house_index = i;
+			if (i + 1 < argc && argv[i + 1] != "-config" && argv[i + 1] != "-house_path" && argv[i + 1] != "-algorithm_path"){ // make sure that there is a path
+				house_path = argv[i + 1];
+			}
+			else {
+				PRINT_USAGE;
+				return;
+			}
+			i += 2;
+			continue;
+		}
+		if (argv[i] == "-algorithm_path" && algorithm_index == -1){ // if at the current there is '-algorithm_path' and its the first time
+			algorithm_index = i;
+			if (i + 1 < argc && argv[i + 1] != "-config" && argv[i + 1] != "-house_path" && argv[i + 1] != "-algorithm_path"){ // make sure that there is a path
+				algorithm_path = argv[i + 1];
+			}
+			else {
+				PRINT_USAGE;
+				return;
+			}
+			i += 2;
+			continue;
+		}
+		else{
+			PRINT_USAGE;
+			return;
+		}
+	}
 
 
-	// building simulator
-	Simulator sim(config, algorithm_arr, sensor_arr, num_of_houses, num_of_algorithms, house_arr);
+	// getting configurations
+	if (config_index != -1){
+		if (config_path[config_path.length() - 1] != '/'){
+			config_path += "/";
+		}
+	}
+	else {
+		config_path = "./";
+	}
+
+	// getting houses
+	if (house_index != -1){
+		if (house_path[house_path.length() - 1] != '/'){
+			house_path += "/";
+		}
+	}
+	else {
+		house_path = "./";
+	}
+
+	// getting algorithms
+	if (algorithm_index != -1){
+		if (algorithm_path[algorithm_path.length() - 1] != '/'){
+			algorithm_path += "/";
+		}
+	}
+	else {
+		algorithm_path = "./";
+	}
+
+	return make_tuple(config_path, house_path, algorithm_path);
+}
+
+// simulate the simulator
+void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms){
 	bool winner = false, about_to_finish = false;
 	int num_steps_after_winning = 0;
 	int rank_in_competition = 1;
+	
+	// compute the maximum of all the houses 'max_step' fields
+	vector<int> max_steps_vec; 
+	for (int i = 0; i < num_of_houses; i++){
+		max_steps_vec.push_back(sim.get_robots_matrix()[0][i]->get_house()->get_max_steps());
+	}
+	int max_steps = *max_element(max_steps_vec.begin(), max_steps_vec.end());
 
 	// the simulation
-	for (; sim.get_steps() < config["MaxSteps"] && num_steps_after_winning <= config["MaxStepsAfterWinner"] && sim.get_not_active() < num_of_algorithms * num_of_houses;)
+	for (; sim.get_steps() < max_steps && num_steps_after_winning <= config["MaxStepsAfterWinner"] && sim.get_not_active() < num_of_algorithms * num_of_houses;)
 	{
 		if (rank_in_competition > 1){ // if there is a winner, start counting
 			num_steps_after_winning++;
 		}
-		if (!winner && rank_in_competition > 1 && sim.get_steps() <= config["MaxSteps"] - config["MaxStepsAfterWinner"]) { // the first robot has finished
+		if (!winner && rank_in_competition > 1 && sim.get_steps() <= max_steps - config["MaxStepsAfterWinner"]) { // the first robot has finished
 			winner = true;
 			about_to_finish = true;
 		}
-		if (rank_in_competition == 1 && sim.get_steps() == config["MaxSteps"] - config["MaxStepsAfterWinner"]){ // if steps == MaxSteps - MaxStepsAfterWinner
+		if (rank_in_competition == 1 && sim.get_steps() == max_steps - config["MaxStepsAfterWinner"]){ // if steps == MaxSteps - MaxStepsAfterWinner
 			about_to_finish = true;
 		}
 		rank_in_competition = sim.simulate_step(rank_in_competition, about_to_finish); // do a simulation step
@@ -651,16 +673,22 @@ int main(int argc, char* argv[])
 	}
 	// finish the simulation
 	sim.finish_simulation();
+}
 
-	// calculate the score of each robot
+// calculates the score matrix and prints it
+void Main::score_simulation(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms){
+	// creating score matrix
 	int** score_matrix = new int*[num_of_algorithms]; // deleted in the end of main()
 	for (int i = 0; i < num_of_algorithms; i++)
 	{
 		score_matrix[i] = new int[num_of_houses]; // deleted in the end of main()
 	}
-	if (sim.get_winner_num_steps() == config["MaxSteps"]){ // if there is no winner, set the winner_num_steps to be simulation_steps
+
+	if (sim.get_winner_num_steps() == -1){ // if there is no winner, set the winner_num_steps to be simulation_steps
 		sim.set_winner_num_steps(sim.get_steps());
 	}
+
+	// calculate the score matrix
 	Robot * cur_robot;
 	for (int i = 0; i < num_of_algorithms; i++)
 	{
@@ -673,45 +701,91 @@ int main(int argc, char* argv[])
 			}
 			auto loc = cur_robot->get_curr_location();
 			score_matrix[i][j] = sim.calculate_score(cur_robot->get_position_in_competition(), sim.get_winner_num_steps(),
-				cur_robot->get_num_of_steps(), cur_robot->get_dirt_collected(), house_arr[j]->get_sum_dirt_in_house(),
+				cur_robot->get_num_of_steps(), cur_robot->get_dirt_collected(), cur_robot->get_house()->get_sum_dirt_in_house(),
 				cur_robot->get_house()->get_house_matrix()[loc.first][loc.second] == 'D');
 		}
 	}
-	// print the scores
-	for (int i = 0; i < num_of_algorithms; i++)
-	{
-		for (int j = 0; j < num_of_houses; j++)
-		{
-			cout << score_matrix[i][j] << endl;
-		}
-	}
 
-	// delete houses array
-	for (int i = 0; i < num_of_houses; ++i){
-		delete house_arr[i];
-	}
-
-	delete[] house_arr;
-
-
-	// delete algorithms array
-
-	for (int i = 0; i < num_of_algorithms; ++i){
-		delete algorithm_arr[i];
-	}
-
-	delete[] algorithm_arr;
-
-	
-	// delete sensor array pointer only - all sensor are being deleted in algorithm destructor
-	delete[] sensor_arr;
+	print_score_and_errors(sim, score_matrix);
 
 	// delete score_matrix
 	for (int i = 0; i < num_of_algorithms; ++i){
 		delete[] score_matrix[i];
 	}
 	delete[] score_matrix;
+}
 
+
+// prints the score matrix according to given format.
+// prints errors after that, if exist.
+void Main::print_score_and_errors(Simulator& sim, int** score_matrix){
+
+}
+
+// freeing all the memory left to free in the program
+void Main::deleting_memory(vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
+	int num_of_houses, int num_of_algorithms){
+	// delete houses array
+	for (int i = 0; i < num_of_houses; ++i){
+		delete house_arr[i];
+	}
+
+	// delete algorithms array
+	for (int i = 0; i < num_of_algorithms; ++i){
+		delete algorithm_arr[i];
+	}
+
+	// delete sensor array pointer only - all sensor are being deleted in algorithm destructor
+	//for (int i = 0; i < num_of_algorithms; i++)
+	//{
+	//	delete sensor_arr[i];
+	//}
+
+}
+
+
+//main function, initialize config arguments, and given houses descriptions,
+//and run the simulator for each house and for each algorithm. Returns 0 on success, 
+//1 on failure.
+int main(int argc, char* argv[])
+{
+	Main main;
+	auto tup = main.command_line_arguments(argc, argv);
+	string config_path = get<0>(tup);
+	string house_path = get<1>(tup);
+	string algorithm_path = get<2>(tup);
+
+	map<string, int> config = main.get_configurations(config_path); // getting configurations map
+	if (config.empty()){
+		return 1;
+	}
+	vector<House*> house_arr = main.get_houses(house_path); // getting houses arr 
+	if (house_arr.empty()){
+		return 1;
+	}
+
+	auto algorithms_and_sensors = get_algorithms_and_sensors(algorithm_path);
+	vector<AbstractAlgorithm*> algorithm_arr = get<0>(algorithms_and_sensors); // getting algorithms arr
+	vector<Sensor*> sensor_arr = get<1>(algorithms_and_sensors);
+	if (algorithm_arr.empty() || sensor_arr.empty()){
+		return 1;
+	}
+	
+	const int num_of_houses = house_arr.size();
+	const int num_of_algorithms = algorithm_arr.size();
+
+	// creating simulator
+	Simulator sim(config, algorithm_arr, sensor_arr, house_arr);
+
+	// simulate the simulator
+	main.simulate(sim, config, num_of_houses, num_of_algorithms);
+	
+	// calculate the score of each robot
+	main.score_simulation(sim, config, num_of_houses, num_of_algorithms);
+
+	// freeing memory
+	main.deleting_memory(house_arr, algorithm_arr, sensor_arr, num_of_houses, num_of_algorithms);
+	
 	return 0;
 }
 
