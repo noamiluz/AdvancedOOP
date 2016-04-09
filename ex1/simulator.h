@@ -385,6 +385,9 @@ public:
 
 	// trim title in the score matrix to be up to 9 chars and aligned to left
 	string Main::trim_title(string& title);
+
+	// calculate average score (on all houses) of an algorithm with index 'index'
+	double Main::avg(int** score_matrix, int index, int num_of_houses);
 	
 	// prints the score matrix according to given format.
 	// prints errors after that, if exist.
@@ -420,24 +423,24 @@ void fix_house_matrix(string *matrix, int rows, int cols, int& found_docking);
 
 
 // ex2 #1 algorithm
-class EastPrefAlgorithm : public AbstractAlgorithm{
+class _316602689_A : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
 
 public:
 
-	EastPrefAlgorithm(const AbstractSensor& sensor, map<string, int>& config) {
+	_316602689_A(const AbstractSensor& sensor, map<string, int>& config) {
 		setSensor(sensor);
 		setConfiguration(config);
 	}
 
-	~EastPrefAlgorithm() {
+	~_316602689_A() {
 		delete m_sensor;
 	}
 
 	// setSensor is called once when the Algorithm is initialized
 	virtual void setSensor(const AbstractSensor& sensor) {
-		m_sensor = const_cast<AbstractSensor*>(&sensor);
+		m_sensor = &sensor;
 	}
 
 	// setConfiguration is called once when the Algorithm is initialized - see below 
@@ -458,24 +461,24 @@ public:
 };
 
 // ex2 #2 algorithm
-class WestPrefAlgorithm : public AbstractAlgorithm{
+class _316602689_B : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
 
 public:
 
-	WestPrefAlgorithm(const AbstractSensor& sensor, map<string, int>& config) {
+	_316602689_B(const AbstractSensor& sensor, map<string, int>& config) {
 		setSensor(sensor);
 		setConfiguration(config);
 	}
 
-	~WestPrefAlgorithm() {
+	~_316602689_B() {
 		delete m_sensor;
 	}
 
 	// setSensor is called once when the Algorithm is initialized
 	virtual void setSensor(const AbstractSensor& sensor) {
-		m_sensor = const_cast<AbstractSensor*>(&sensor);
+		m_sensor = &sensor;
 	}
 
 	// setConfiguration is called once when the Algorithm is initialized - see below 
@@ -497,24 +500,24 @@ public:
 
 
 // ex2 #3 algorithm
-class SouthPrefAlgorithm : public AbstractAlgorithm{
+class _316602689_C : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
 
 public:
 
-	SouthPrefAlgorithm(const AbstractSensor& sensor, map<string, int>& config) {
+	_316602689_C(const AbstractSensor& sensor, map<string, int>& config) {
 		setSensor(sensor);
 		setConfiguration(config);
 	}
 
-	~SouthPrefAlgorithm() {
+	~_316602689_C() {
 		delete m_sensor;
 	}
 
 	// setSensor is called once when the Algorithm is initialized
 	virtual void setSensor(const AbstractSensor& sensor) {
-		m_sensor = const_cast<AbstractSensor*>(&sensor);
+		m_sensor = &sensor;
 	}
 
 	// setConfiguration is called once when the Algorithm is initialized - see below 

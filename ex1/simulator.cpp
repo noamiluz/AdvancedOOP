@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <time.h>
+#include <iomanip>
 
 #include "simulator.h"
 
@@ -412,7 +413,7 @@ map<string, int> Main::get_configurations(const string path){
 // read from .house files and parse them into a house array;
 vector<House*> Main::get_houses(string path) {
 	FileParser fp;
-	vector<House*> house_arr;
+	vector<House*> house_arr; // deleted in the end of main()
 	vector<House*> empty;
 
 	// getting the full path
@@ -422,15 +423,18 @@ vector<House*> Main::get_houses(string path) {
 		return empty;
 	}
 
+	// sort result vector according to file name
+	sort(result.begin(), result.end(), [&fp](const string s1, const string s2){ return fp.get_file_name(s1).compare(fp.get_file_name(s2)) < 0; });
+
 	int num_of_houses = result.size();
-	vector<House*> house_arr; // deleted in the end of main()
+
 	ifstream fin;
 	string name, line;
 	int r, c, max_steps;
 	string* matrix;
 	pair<int, int> docking;
 	string::size_type index;
-	for (int i = 0; i < num_of_houses; i++)
+	for (int i = 0; i < num_of_houses; i++) // iterate on the houses in sorted order
 	{
 		fin.open(result[i]);
 		if (!fin.is_open()){
@@ -483,6 +487,7 @@ vector<House*> Main::get_houses(string path) {
 				docking.second = index;
 			}
 		}
+		house_names.push_back(fp.get_file_name(string(result[i], 0, result[i].length() - 6))); // push valid houses file name 
 		house_arr.push_back(new House(name, max_steps, r, c, docking, matrix)); // deleted in the end of main()
 	}
 
@@ -721,15 +726,59 @@ string Main::trim_title(string& title){
 	return temp + string(10 - temp.length(), ' ');
 }
 
+// calculate average score (on all houses) of an algorithm with index 'index'
+double Main::avg(int** score_matrix, int index, int num_of_houses){
+	int sum = 0;
+	for (int i = 0; i < num_of_houses; i++){
+		sum += score_matrix[index][i];
+	}
+	return (double)sum / num_of_houses;
+}
 
 // prints the score matrix according to given format.
 // prints errors after that, if exist.
+// ASSUMPTION: the algorithm_arr and house_arr are sorted, so robot_matrix as well
 void Main::print_score_and_errors(Simulator& sim, int** score_matrix){
 
 	const int num_of_chars_cols = 14 + 11 * (sim.get_num_of_houses() + 1) + 1;
 	const int num_of_chars_rows = 2 * (sim.get_num_of_algorithms() + 1) + 1;
 	string dashes_line(num_of_chars_cols, '-');
+	for (int i = 0; i < num_of_chars_rows; i++)
+	{
+		if (i % 2 == 0){
+			cout << dashes_line << endl;
+			continue;
+		}
+		if (i == 1){
+			string tmp("|             ");
+			for (int j = 0; j < sim.get_num_of_houses(); j++){
+				tmp += "|" + trim_title(house_names[j]);
+			}
+			tmp += "|AVG       |";
+			cout << tmp << endl;
+			continue;
+		}
 
+		int algo_index = ((i - 1) / 2) - 1;
+		string tmp = "|" + algorithm_names[algo_index] + " ";
+		for (int j = 0; j < sim.get_num_of_houses(); j++)
+		{
+			string score = to_string(score_matrix[algo_index][j]);
+			tmp += "|" + string(10 - score.length(), ' ') + score;
+		}
+		double d = avg(score_matrix, algo_index, sim.get_num_of_houses());
+		stringstream stream;
+		stream << fixed << setprecision(2) << d;
+		string s = stream.str();
+		tmp += "|" + string(10 - s.length(), ' ') + s + "|";
+		cout << tmp << endl;
+	}
+
+	if (!error_list.empty()){ // if there are errors, print them
+		cout << endl;
+		cout << "Errors:" << endl;
+		print_errors(error_list);
+	}
 
 }
 
@@ -805,7 +854,7 @@ int main(int argc, char* argv[])
 //enum class Direction { East, West, South, North, Stay
 
 // step is called by the simulation for each time unit
-Direction EastPrefAlgorithm::step() {
+Direction _316602689_A::step() {
 	SensorInformation s_i = m_sensor->sense();
 	if (s_i.dirtLevel > 0){// current position still dirty
 		return Direction::Stay;
@@ -821,7 +870,7 @@ Direction EastPrefAlgorithm::step() {
 }
 
 // step is called by the simulation for each time unit
-Direction WestPrefAlgorithm::step() {
+Direction _316602689_B::step() {
 	SensorInformation s_i = m_sensor->sense();
 	if (s_i.dirtLevel > 0){// current position still dirty
 		return Direction::Stay;
@@ -837,7 +886,7 @@ Direction WestPrefAlgorithm::step() {
 }
 
 // step is called by the simulation for each time unit
-Direction SouthPrefAlgorithm::step() {
+Direction _316602689_C::step() {
 	SensorInformation s_i = m_sensor->sense();
 	if (s_i.dirtLevel > 0){// current position still dirty
 		return Direction::Stay;
