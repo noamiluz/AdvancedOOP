@@ -110,27 +110,16 @@ int House::count_dirt() const{
 Simulator::~Simulator(){
 	// delete robots array
 	for (int i = 0; i < m_num_of_algorithms; i++){
-		for (int j = 0; j < m_num_of_houses; j++){
-			delete m_robots_matrix[i][j];
-		}
-		delete[] m_robots_matrix[i];
+		delete m_robot_arr[i];
 	}
-	delete[] m_robots_matrix;
 }
 
 //function inits the maiin robots matrix - Initializes each robot in
 //the matrix with his specific house and algorithm.
-void Simulator::init_robots_matrix(const vector<House*>& house_arr) {
-	m_robots_matrix = new Robot**[m_num_of_algorithms];
+void Simulator::init_robot_arr(House* house) { 
 
 	for (int i = 0; i < m_num_of_algorithms; i++) {
-		m_robots_matrix[i] = new Robot*[m_num_of_houses];
-		for (int j = 0; j < m_num_of_houses; j++) {	
-			House* robot_house = new House(*(house_arr[j]));
-
-			m_robots_matrix[i][j] = new Robot(m_config["BatteryCapacity"], robot_house);
-			// new Robot is deleted in the destructor of Simulator, new House is deleted in the destructor of Robot
-		}
+		m_robot_arr.push_back(new Robot(m_config["BatteryCapacity"], house)); // deleted in Simulator's destructor.
 	}
 }
 
@@ -143,115 +132,107 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 	Robot * cur_robot;
 	bool is_someone_finished = false;
 	int num_of_winners_this_step = 0;
-	for (int j = 0; j < m_num_of_houses; j++)
+	for (int i = 0; i < m_num_of_algorithms; i++)
 	{
-		for (int i = 0; i < m_num_of_algorithms; i++)
-		{
-			cur_robot = m_robots_matrix[i][j];
-			//init sensor house before activating algorithm
-			m_sensor_arr[i]->set_house(cur_robot->get_house());
-			m_sensor_arr[i]->set_curr_location(cur_robot->get_curr_location());
+		cur_robot = m_robot_arr[i];
+		//init sensor house before activating algorithm
+		m_sensor_arr[i]->set_house(cur_robot->get_house());
+		m_sensor_arr[i]->set_curr_location(cur_robot->get_curr_location());
 
-			if (!cur_robot->is_active()){ // if the robot is not active any more, continue
-				continue;
-			}
+		if (!cur_robot->is_active()){ // if the robot is not active any more, continue
+			continue;
+		}
 
-			if (m_steps > cur_robot->get_house()->get_max_steps()){
-				cur_robot->set_active(false);
-				continue;
-			}
+		if (m_steps > cur_robot->get_house()->get_max_steps()){
+			cur_robot->set_active(false);
+			continue;
+		}
 
-			if (about_to_finish){
-				m_algorithm_arr[i]->aboutToFinish(m_config["MaxStepsAfterWinner"]);
-			}
+		if (about_to_finish){
+			m_algorithm_arr[i]->aboutToFinish(m_config["MaxStepsAfterWinner"]);
+		}
 
-			Direction d = m_algorithm_arr[i]->step(); // ask the algorithm what direction to go
-			pair<int, int> next_loc;
-			House* cur_house = cur_robot->get_house(); // get the house of the current robot
-			const pair<int, int>& cur_loc = cur_robot->get_curr_location(); // get the current location of the robot
+		Direction d = m_algorithm_arr[i]->step(); // ask the algorithm what direction to go
+		pair<int, int> next_loc;
+		House* cur_house = cur_robot->get_house(); // get the house of the current robot
+		const pair<int, int>& cur_loc = cur_robot->get_curr_location(); // get the current location of the robot
 
-			switch (d){ // calculate the next location
-			case Direction::North:
-				next_loc = { cur_loc.first - 1, cur_loc.second };
-				break;
-			case Direction::East:
-				next_loc = { cur_loc.first, cur_loc.second + 1 };
-				break;
-			case Direction::South:
-				next_loc = { cur_loc.first + 1, cur_loc.second };
-				break;
-			case Direction::West:
-				next_loc = { cur_loc.first, cur_loc.second - 1 };
-				break;
-			default:
-				next_loc = cur_loc;
-				break;
-			}
-			char ch = cur_house->get_house_matrix()[next_loc.first][next_loc.second]; // get the matrix item in the next location
-			cur_robot->set_curr_location(next_loc); // set the next location as the current one
-			cur_robot->increment_num_of_steps(); // increment the number of steps the robot has done
+		switch (d){ // calculate the next location
+		case Direction::North:
+			next_loc = { cur_loc.first - 1, cur_loc.second };
+			break;
+		case Direction::East:
+			next_loc = { cur_loc.first, cur_loc.second + 1 };
+			break;
+		case Direction::South:
+			next_loc = { cur_loc.first + 1, cur_loc.second };
+			break;
+		case Direction::West:
+			next_loc = { cur_loc.first, cur_loc.second - 1 };
+			break;
+		default:
+			next_loc = cur_loc;
+			break;
+		}
+		char ch = cur_house->get_house_matrix()[next_loc.first][next_loc.second]; // get the matrix item in the next location
+		cur_robot->set_curr_location(next_loc); // set the next location as the current one
+		cur_robot->increment_num_of_steps(); // increment the number of steps the robot has done
 
-			if (ch == 'W'){ // if there is a wall in the next location
-				cur_robot->set_active(false);
-				m_not_active++;
-				cur_robot->set_valid(false);
-				cout << "Algorithm [" << i << "] on House [" << cur_house->get_house_short_name() <<
-					"] has made an invalid step: Moved to a wall in the position (" << next_loc.first <<
-					"," << next_loc.second << ")." << endl << "Simulation stopped for this robot." << endl;
-				continue;
-			}
+		if (ch == 'W'){ // if there is a wall in the next location
+			cur_robot->set_active(false);
+			m_not_active++;
+			cur_robot->set_valid(false);
+			continue;
+		}
 
-			// if the current location is a docking station, increment the curr_battery_level by RechargeRate.
-			// if the battery is full do not increment.
-			if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] == 'D'){
-				// if the current move was 'stay in docking station' do not decrement battery
-				if (d == Direction::Stay){ // if the current move was 'stay in docking station' do not decrement battery
-					cur_robot->set_curr_battery_level(min(m_config["BatteryCapacity"], cur_robot->get_curr_battary_level() + m_config["BatteryRechargeRate"]));
-				}
-
-				else { // if the current move was to docking station decrement battery.
-					cur_robot->set_curr_battery_level(min(m_config["BatteryCapacity"], cur_robot->get_curr_battary_level() - m_config["BatteryConsumptionRate"]));
-				}
-
-				// if the robot has finished cleaning the house
-				if (cur_robot->get_dirt_collected() == cur_robot->get_house()->get_sum_dirt_in_house()){
-					cur_robot->set_position_in_competition(rank_in_competition); // update the cur_robot's position in the competition
-					if (m_winner_num_steps == -1) { // the first robot to finish has to update the winner_num_steps field
-						m_winner_num_steps = m_steps;
-					}
-					is_someone_finished = true;
-					cur_robot->set_active(false);
-					m_not_active++;
-					num_of_winners_this_step++;
-				}
-				continue;
-			}
-			// if the current move was  docking station, and the next one isn't docking station, charge the battary and do not decrement.
-			else if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] != 'D' && cur_house->get_house_matrix()[cur_loc.first][cur_loc.second] == 'D'){
+		// if the current location is a docking station, increment the curr_battery_level by RechargeRate.
+		// if the battery is full do not increment.
+		if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] == 'D'){
+			// if the current move was 'stay in docking station' do not decrement battery
+			if (d == Direction::Stay){ // if the current move was 'stay in docking station' do not decrement battery
 				cur_robot->set_curr_battery_level(min(m_config["BatteryCapacity"], cur_robot->get_curr_battary_level() + m_config["BatteryRechargeRate"]));
 			}
-			else { // if the current location is not on a docking station, decrement the curr_battery_level by ConsumptionRate.
-				// if the battery level is 0 do not decrement.
-				cur_robot->set_curr_battery_level(max(0, cur_robot->get_curr_battary_level() - m_config["BatteryConsumptionRate"]));
+
+			else { // if the current move was to docking station decrement battery.
+				cur_robot->set_curr_battery_level(min(m_config["BatteryCapacity"], cur_robot->get_curr_battary_level() - m_config["BatteryConsumptionRate"]));
 			}
 
-			// clean one dust level in the next spot and update the matrix. If there is no dust, do nothing.
-			cur_house->get_house_matrix()[next_loc.first][next_loc.second] = ch < 49 || ch > 57 ? ' ' : (char)((cur_house->get_house_matrix()[next_loc.first][next_loc.second] - 1));
-			if (ch > 48 && ch < 58){ // ch = 1,...,9
-				cur_robot->increment_dirt_collected(); // increment the dirt collected by this robot
-			}
-
-			if (cur_robot->get_curr_battary_level() == 0){ // the robot got stuck with battery 0
+			// if the robot has finished cleaning the house
+			if (cur_robot->get_dirt_collected() == cur_robot->get_house()->get_sum_dirt_in_house()){
+				cur_robot->set_position_in_competition(rank_in_competition); // update the cur_robot's position in the competition
+				if (m_winner_num_steps == m_max_steps) { // the first robot to finish has to update the winner_num_steps field
+					m_winner_num_steps = m_steps;
+				}
+				is_someone_finished = true;
 				cur_robot->set_active(false);
 				m_not_active++;
-				cur_robot->set_position_in_competition(10);
-				cout << "Algorithm [" << i << "] on House [" << cur_house->get_house_short_name() <<
-					"] has run out of battery." << endl << "Simulation stopped for this robot." << endl;
-				continue;
-
+				num_of_winners_this_step++;
 			}
+			continue;
+		}
+		// if the current move was  docking station, and the next one isn't docking station, charge the battary and do not decrement.
+		else if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] != 'D' && cur_house->get_house_matrix()[cur_loc.first][cur_loc.second] == 'D'){
+			cur_robot->set_curr_battery_level(min(m_config["BatteryCapacity"], cur_robot->get_curr_battary_level() + m_config["BatteryRechargeRate"]));
+		}
+		else { // if the current location is not on a docking station, decrement the curr_battery_level by ConsumptionRate.
+			// if the battery level is 0 do not decrement.
+			cur_robot->set_curr_battery_level(max(0, cur_robot->get_curr_battary_level() - m_config["BatteryConsumptionRate"]));
+		}
+
+		// clean one dust level in the next spot and update the matrix. If there is no dust, do nothing.
+		cur_house->get_house_matrix()[next_loc.first][next_loc.second] = ch < 49 || ch > 57 ? ' ' : (char)((cur_house->get_house_matrix()[next_loc.first][next_loc.second] - 1));
+		if (ch > 48 && ch < 58){ // ch = 1,...,9
+			cur_robot->increment_dirt_collected(); // increment the dirt collected by this robot
+		}
+
+		if (cur_robot->get_curr_battary_level() == 0){ // the robot got stuck with battery 0
+			cur_robot->set_active(false);
+			m_not_active++;
+			cur_robot->set_position_in_competition(10);
+			continue;
 
 		}
+
 	}
 
 	if (is_someone_finished){ // if there were robots who finished in this step increment the rank
@@ -265,21 +246,19 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 // update all the robots that did not finish cleaning
 void Simulator::finish_simulation(){
 	Robot * cur_robot;
-	for (int j = 0; j < m_num_of_houses; j++)
+	for (int i = 0; i < m_num_of_algorithms; i++)
 	{
-		for (int i = 0; i < m_num_of_algorithms; i++)
-		{
-			cur_robot = m_robots_matrix[i][j];
-			// if the robot is not active any more or it didnt run out of battery, meaning it either finished, or invalid, we continue
-			if (!cur_robot->is_valid() || (cur_robot->get_position_in_competition() > 0 && cur_robot->get_position_in_competition() < 10)){
-				continue;
-			}
-			// disactive the robot and set its position to be 10
-			cur_robot->set_active(false);
-			cur_robot->set_position_in_competition(10);
-			cur_robot->set_num_of_steps(m_steps); // set this_num_steps to be simulation_stpes
+		cur_robot = m_robot_arr[i];
+		// if the robot is not active any more or it didnt run out of battery, meaning it either finished, or invalid, we continue
+		if (!cur_robot->is_valid() || (cur_robot->get_position_in_competition() > 0 && cur_robot->get_position_in_competition() < 10)){
+			continue;
 		}
+		// disactive the robot and set its position to be 10
+		cur_robot->set_active(false);
+		cur_robot->set_position_in_competition(10);
+		cur_robot->set_num_of_steps(m_steps); // set this_num_steps to be simulation_stpes
 	}
+	
 }
 
 
@@ -653,24 +632,17 @@ void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses,
 	int num_steps_after_winning = 0;
 	int rank_in_competition = 1;
 	
-	// compute the maximum of all the houses 'max_step' fields
-	vector<int> max_steps_vec; 
-	for (int i = 0; i < num_of_houses; i++){
-		max_steps_vec.push_back(sim.get_robots_matrix()[0][i]->get_house()->get_max_steps());
-	}
-	int max_steps = *max_element(max_steps_vec.begin(), max_steps_vec.end());
-
 	// the simulation
-	for (; sim.get_steps() < max_steps && num_steps_after_winning <= config["MaxStepsAfterWinner"] && sim.get_not_active() < num_of_algorithms * num_of_houses;)
+	for (; sim.get_steps() < sim.get_max_steps() && num_steps_after_winning <= config["MaxStepsAfterWinner"] && sim.get_not_active() < num_of_algorithms;)
 	{
 		if (rank_in_competition > 1){ // if there is a winner, start counting
 			num_steps_after_winning++;
 		}
-		if (!winner && rank_in_competition > 1 && sim.get_steps() <= max_steps - config["MaxStepsAfterWinner"]) { // the first robot has finished
+		if (!winner && rank_in_competition > 1 && sim.get_steps() <= sim.get_max_steps() - config["MaxStepsAfterWinner"]) { // the first robot has finished
 			winner = true;
 			about_to_finish = true;
 		}
-		if (rank_in_competition == 1 && sim.get_steps() == max_steps - config["MaxStepsAfterWinner"]){ // if steps == MaxSteps - MaxStepsAfterWinner
+		if (rank_in_competition == 1 && sim.get_steps() == sim.get_max_steps() - config["MaxStepsAfterWinner"]){ // if steps == MaxSteps - MaxStepsAfterWinner
 			about_to_finish = true;
 		}
 		rank_in_competition = sim.simulate_step(rank_in_competition, about_to_finish); // do a simulation step
@@ -681,7 +653,7 @@ void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses,
 }
 
 // calculates the score matrix and prints it
-void Main::score_simulation(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms){
+void Main::score_simulation(vector<Simulator>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms){
 	// creating score matrix
 	int** score_matrix = new int*[num_of_algorithms]; // deleted in the end of main()
 	for (int i = 0; i < num_of_algorithms; i++)
@@ -689,29 +661,33 @@ void Main::score_simulation(Simulator& sim, map<string, int>& config, int num_of
 		score_matrix[i] = new int[num_of_houses]; // deleted in the end of main()
 	}
 
-	if (sim.get_winner_num_steps() == -1){ // if there is no winner, set the winner_num_steps to be simulation_steps
-		sim.set_winner_num_steps(sim.get_steps());
+	for (int i = 0; i < num_of_houses; i++)
+	{
+		if (sim_arr[i].get_winner_num_steps() == sim_arr[i].get_max_steps()){ // if there is no winner, set the winner_num_steps to be simulation_steps
+			sim_arr[i].set_winner_num_steps(sim_arr[i].get_steps());
+		}
 	}
+	
 
 	// calculate the score matrix
 	Robot * cur_robot;
-	for (int i = 0; i < num_of_algorithms; i++)
+	for (int i = 0; i < num_of_houses; i++)
 	{
-		for (int j = 0; j < num_of_houses; j++)
+		for (int j = 0; j < num_of_algorithms; j++)
 		{
-			cur_robot = sim.get_robots_matrix()[i][j];
+			cur_robot = sim_arr[i].get_robot_arr()[j];
 			if (!cur_robot->is_valid()){
 				score_matrix[i][j] = 0;
 				continue;
 			}
 			auto loc = cur_robot->get_curr_location();
-			score_matrix[i][j] = sim.calculate_score(cur_robot->get_position_in_competition(), sim.get_winner_num_steps(),
+			score_matrix[i][j] = sim_arr[i].calculate_score(cur_robot->get_position_in_competition(), sim_arr[i].get_winner_num_steps(),
 				cur_robot->get_num_of_steps(), cur_robot->get_dirt_collected(), cur_robot->get_house()->get_sum_dirt_in_house(),
 				cur_robot->get_house()->get_house_matrix()[loc.first][loc.second] == 'D');
 		}
 	}
 
-	print_score_and_errors(sim, score_matrix);
+	print_score_and_errors(sim_arr, score_matrix);
 
 	// delete score_matrix
 	for (int i = 0; i < num_of_algorithms; ++i){
@@ -738,10 +714,10 @@ double Main::avg(int** score_matrix, int index, int num_of_houses){
 // prints the score matrix according to given format.
 // prints errors after that, if exist.
 // ASSUMPTION: the algorithm_arr and house_arr are sorted, so robot_matrix as well
-void Main::print_score_and_errors(Simulator& sim, int** score_matrix){
+void Main::print_score_and_errors(vector<Simulator>& sim_arr, int** score_matrix){
 
-	const int num_of_chars_cols = 14 + 11 * (sim.get_num_of_houses() + 1) + 1;
-	const int num_of_chars_rows = 2 * (sim.get_num_of_algorithms() + 1) + 1;
+	const int num_of_chars_cols = 14 + 11 * (sim_arr.size() + 1) + 1;
+	const int num_of_chars_rows = 2 * (sim_arr[0].get_num_of_algorithms() + 1) + 1;
 	string dashes_line(num_of_chars_cols, '-');
 	for (int i = 0; i < num_of_chars_rows; i++)
 	{
@@ -751,7 +727,7 @@ void Main::print_score_and_errors(Simulator& sim, int** score_matrix){
 		}
 		if (i == 1){
 			string tmp("|             ");
-			for (int j = 0; j < sim.get_num_of_houses(); j++){
+			for (int j = 0; j < sim_arr.size(); j++){
 				tmp += "|" + trim_title(house_names[j]);
 			}
 			tmp += "|AVG       |";
@@ -761,12 +737,12 @@ void Main::print_score_and_errors(Simulator& sim, int** score_matrix){
 
 		int algo_index = ((i - 1) / 2) - 1;
 		string tmp = "|" + algorithm_names[algo_index] + " ";
-		for (int j = 0; j < sim.get_num_of_houses(); j++)
+		for (int j = 0; j < sim_arr.size(); j++)
 		{
 			string score = to_string(score_matrix[algo_index][j]);
 			tmp += "|" + string(10 - score.length(), ' ') + score;
 		}
-		double d = avg(score_matrix, algo_index, sim.get_num_of_houses());
+		double d = avg(score_matrix, algo_index, sim_arr.size());
 		stringstream stream;
 		stream << fixed << setprecision(2) << d;
 		string s = stream.str();
@@ -834,14 +810,21 @@ int main(int argc, char* argv[])
 	const int num_of_houses = house_arr.size();
 	const int num_of_algorithms = algorithm_arr.size();
 
-	// creating simulator
-	Simulator sim(config, algorithm_arr, sensor_arr, house_arr);
+	// creating vector of simulators, one for each house
+	vector<Simulator> simulator_arr;
+	for (int i = 0; i < num_of_houses; i++){
+		simulator_arr.emplace_back(config, algorithm_arr, sensor_arr, house_arr[i]);
+	}
+	
 
-	// simulate the simulator
-	main.simulate(sim, config, num_of_houses, num_of_algorithms);
+	// simulate the simulator for each house
+	for (int i = 0; i < num_of_houses; i++){
+		main.simulate(simulator_arr[i], config, num_of_houses, num_of_algorithms);
+	}
+	
 	
 	// calculate the score of each robot
-	main.score_simulation(sim, config, num_of_houses, num_of_algorithms);
+	main.score_simulation(simulator_arr, config, num_of_houses, num_of_algorithms);
 
 	// freeing memory
 	main.deleting_memory(house_arr, algorithm_arr, sensor_arr, num_of_houses, num_of_algorithms);

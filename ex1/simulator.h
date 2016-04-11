@@ -153,8 +153,10 @@ class Robot{
 public:
 
 	Robot(int init_battary_level, House* house) :
-		m_house(house), m_curr_battary_level(init_battary_level), m_curr_location(m_house->get_house_docking_station()), m_is_active(true),
-		m_this_num_of_steps(0), m_dirt_collected(0), m_position_in_competition(0), m_is_valid(true) { }
+		m_curr_battary_level(init_battary_level), m_curr_location(m_house->get_house_docking_station()), m_is_active(true),
+		m_this_num_of_steps(0), m_dirt_collected(0), m_position_in_competition(0), m_is_valid(true) {
+		m_house = new House(*house);
+	}
 
 	~Robot(){
 		delete m_house;
@@ -238,19 +240,19 @@ class Simulator{
 	map<string, int> m_config; // configuration properties
 
 	int m_steps; // num of steps the simulator did
-	Robot*** m_robots_matrix; // matrix of pointers to Robots. each row represents an algorithm and each column represents a house
+	vector<Robot*> m_robot_arr; // vectors of Robots. one for each algorithm.
 	vector<AbstractAlgorithm*> m_algorithm_arr;
 	vector<Sensor*> m_sensor_arr;
-	const int m_num_of_houses;
 	const int m_num_of_algorithms;
+	const int m_max_steps; // the max steps of the house this robot cleans.
 	int m_winner_num_steps; // num of steps the winner has done during the simulation. (if there is no winner, remains MaxSteps)
 	int m_not_active; // num of robots that are not active any more
 
 public:
-	Simulator(map<string, int>& config, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr, vector<House*>& house_arr) :
-		m_config(config), m_steps(0), m_robots_matrix(nullptr), m_algorithm_arr(algorithm_arr), m_sensor_arr(sensor_arr),
-		m_num_of_houses(house_arr.size()), m_num_of_algorithms(algorithm_arr.size()), m_winner_num_steps(-1), m_not_active(0) {
-		init_robots_matrix(house_arr);
+	Simulator(map<string, int>& config, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr, House* house) :
+		m_config(config), m_steps(0), m_algorithm_arr(algorithm_arr), m_sensor_arr(sensor_arr),
+		m_num_of_algorithms(algorithm_arr.size()), m_max_steps(house->get_max_steps()), m_winner_num_steps(house->get_max_steps()), m_not_active(0) {
+		init_robot_arr(house);
 	}
 
 	~Simulator();
@@ -259,7 +261,7 @@ public:
 	Simulator& operator=(const Simulator&) = delete;
 
 	// Initiate the field m_robots_matrix 
-	void init_robots_matrix(const vector<House*>& house_arr);
+	void init_robot_arr(House* house_arr);
 
 	const int get_steps() const{
 		return m_steps;
@@ -273,8 +275,8 @@ public:
 		m_winner_num_steps = steps;
 	}
 
-	Robot*** get_robots_matrix(){
-		return m_robots_matrix;
+	vector<Robot*>& get_robot_arr(){
+		return m_robot_arr;
 	}
 
 	int get_not_active(){
@@ -293,8 +295,8 @@ public:
 		return m_algorithm_arr;
 	}
 
-	const int get_num_of_houses() const{
-		return m_num_of_houses;
+	const int get_max_steps() const {
+		return m_max_steps;
 	}
 
 	const int get_num_of_algorithms() const {
@@ -381,7 +383,7 @@ public:
 	void simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms);
 
 	// calculates the score matrix and prints it
-	void score_simulation(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms);
+	void Main::score_simulation(vector<Simulator>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms);
 
 	// trim title in the score matrix to be up to 9 chars and aligned to left
 	string Main::trim_title(string& title);
@@ -391,35 +393,12 @@ public:
 	
 	// prints the score matrix according to given format.
 	// prints errors after that, if exist.
-	void Main::print_score_and_errors(Simulator& sim, int** score_matrix);
+	void Main::print_score_and_errors(vector<Simulator>& sim_arr, int** score_matrix);
 
 	// freeing all the memory left to free in the program
 	void deleting_memory(vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
 		int num_of_houses, int num_of_algorithms);
 };
-
-// returns vector of the full paths to all the files in the 'path_of_directory' directory which their names contains the suffix 'suffix' 
-// path_of_directory could be relative or absolute (and with or without '/')
-vector<string> get_file_paths(string path_of_directory, string suffix);
-
-// splits a string according to a delimiter. (from recitation)
-vector<string> split(const string &s, char delim);
-
-// cleans a string from unwanted whitespaces. (from recitation)
-string trim(string& str);
-
-// given a line read from the configuration file, update the configuration map. (from recitation)
-void processLine(const string& line, map<string, int> &config);
-
-// read from configuration file and return the configurations map
-map<string, int> get_configurations(string path);
-
-// read from .house files and parse them into a house array;
-House** get_houses(char* path);
-
-// check if house matrix has boundaries, otherwise, add walls. changing 
-//found_docking to false in case docking station is at the the end
-void fix_house_matrix(string *matrix, int rows, int cols, int& found_docking);
 
 
 // ex2 #1 algorithm
