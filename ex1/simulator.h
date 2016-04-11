@@ -19,6 +19,7 @@ class House{
 	const pair<int, int> m_docking_station;
 	string* m_house_matrix;
 	const int m_sum_dirt; // sum of the dirt in the house
+	bool m_flag; // true iff the aboutToFinish was called for this house
 
 	// Returns the sum of all the dust in the house. <private method, called once by the constructor>
 	int count_dirt() const;
@@ -27,7 +28,7 @@ public:
 	House(const string& short_name, const int& max_steps, const int& rows, const int& cols,
 		const pair<int, int>& docking_station, string* house_matrix) :
 		m_short_name(short_name), m_max_steps(max_steps), m_rows(rows), m_cols(cols),
-		m_docking_station(docking_station), m_house_matrix(house_matrix), m_sum_dirt(count_dirt()) {}
+		m_docking_station(docking_station), m_house_matrix(house_matrix), m_sum_dirt(count_dirt()), m_flag(false) {}
 
 	~House();
 
@@ -62,10 +63,18 @@ public:
 	const int get_sum_dirt_in_house() const {
 		return m_sum_dirt;
 	}
+
+	bool get_flag(){
+		return m_flag;
+	}
+
+	void set_flag(bool b){
+		m_flag = b;
+	}
 };
 
 
-class Sensor : public AbstractSensor{
+class Sensor : public AbstractSensor {
 	House* m_house;
 	pair<int, int> m_curr_location;
 
@@ -95,6 +104,7 @@ public:
 		m_curr_location = location;
 	}
 
+	SensorInformation my_sense(pair<int, int> position) const;
 };
 
 
@@ -257,8 +267,11 @@ public:
 
 	~Simulator();
 
-	Simulator(const Simulator& simulator) = delete;
-	Simulator& operator=(const Simulator&) = delete;
+	Simulator(const Simulator& other) : m_config(other.m_config), m_steps(other.m_steps), m_robot_arr(other.m_robot_arr),
+		m_algorithm_arr(other.m_algorithm_arr), m_sensor_arr(other.m_sensor_arr), m_num_of_algorithms(other.m_algorithm_arr.size()),
+		m_max_steps(other.m_max_steps), m_winner_num_steps(other.m_winner_num_steps), m_not_active(other.m_not_active) {}
+
+	Simulator& operator=(const Simulator& other) = delete;
 
 	// Initiate the field m_robots_matrix 
 	void init_robot_arr(House* house_arr);
@@ -373,7 +386,7 @@ public:
 
 	// load .so files that represent algorithms
 	// creates vector of algorithms (one of each type), and vector of sensors (one for every algorithm)
-	tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> get_algorithms_and_sensors(string path);
+	tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> get_algorithms_and_sensors(string path, map<string, int>& config);
 
 	// parse the command line arguments
 	// returns a tuple <config_path, house_path, algorithm_path>
@@ -383,17 +396,17 @@ public:
 	void simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms);
 
 	// calculates the score matrix and prints it
-	void Main::score_simulation(vector<Simulator>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms);
+	void score_simulation(vector<Simulator>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms);
 
 	// trim title in the score matrix to be up to 9 chars and aligned to left
-	string Main::trim_title(string& title);
+	string trim_title(string& title);
 
 	// calculate average score (on all houses) of an algorithm with index 'index'
-	double Main::avg(int** score_matrix, int index, int num_of_houses);
+	double avg(int** score_matrix, int index, int num_of_houses);
 	
 	// prints the score matrix according to given format.
 	// prints errors after that, if exist.
-	void Main::print_score_and_errors(vector<Simulator>& sim_arr, int** score_matrix);
+	void print_score_and_errors(vector<Simulator>& sim_arr, int** score_matrix);
 
 	// freeing all the memory left to free in the program
 	void deleting_memory(vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
@@ -401,10 +414,35 @@ public:
 };
 
 
+
+
+
+
+
 // ex2 #1 algorithm
 class _316602689_A : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
+
+	class Vertex {
+
+	public:
+		vector<Vertex*> neighbors;
+		Vertex* m_parent;
+		char m_color; // 'w' = white ; 'g' = grey; 'b' = black
+		int m_distance;
+
+		Vertex() : m_parent(nullptr), m_color('w'), m_distance(UINT_MAX) {}
+
+		~Vertex() {}
+	};
+
+	map<pair<int, int>, Vertex*> create_graph_from_matrix(string* matrix, int rows, int cols);
+
+	void delete_graph(map<pair<int, int>, Vertex*> graph);
+
+	Direction bfs(map<pair<int, int>, Vertex*> graph, pair<int, int> s, Vertex* t);
+
 
 public:
 
@@ -417,6 +455,10 @@ public:
 		delete m_sensor;
 	}
 
+	_316602689_A(const _316602689_A&) = delete;
+
+	_316602689_A& operator=(const _316602689_A&) = delete;
+
 	// setSensor is called once when the Algorithm is initialized
 	virtual void setSensor(const AbstractSensor& sensor) {
 		m_sensor = &sensor;
@@ -434,7 +476,7 @@ public:
 	// when steps == MaxSteps - MaxStepsAfterWinner 
 	// parameter stepsTillFinishing == MaxStepsAfterWinner 
 	virtual void aboutToFinish(int stepsTillFinishing){
-
+		((Sensor*)m_sensor)->get_house()->set_flag(true);
 	}
 
 };
@@ -443,6 +485,26 @@ public:
 class _316602689_B : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
+
+	class Vertex {
+
+	public:
+		vector<Vertex*> neighbors;
+		Vertex* m_parent;
+		char m_color; // 'w' = white ; 'g' = grey; 'b' = black
+		int m_distance;
+
+		Vertex() : m_parent(nullptr), m_color('w'), m_distance(UINT_MAX) {}
+
+		~Vertex() {}
+	};
+
+	map<pair<int, int>, Vertex*> create_graph_from_matrix(string* matrix, int rows, int cols);
+
+	void delete_graph(map<pair<int, int>, Vertex*> graph);
+
+	Direction bfs(map<pair<int, int>, Vertex*> graph, pair<int, int> s, Vertex* t);
+
 
 public:
 
@@ -455,6 +517,10 @@ public:
 		delete m_sensor;
 	}
 
+	_316602689_B(const _316602689_B&) = delete;
+
+	_316602689_B& operator=(const _316602689_B&) = delete;
+
 	// setSensor is called once when the Algorithm is initialized
 	virtual void setSensor(const AbstractSensor& sensor) {
 		m_sensor = &sensor;
@@ -472,7 +538,7 @@ public:
 	// when steps == MaxSteps - MaxStepsAfterWinner 
 	// parameter stepsTillFinishing == MaxStepsAfterWinner 
 	virtual void aboutToFinish(int stepsTillFinishing){
-
+		((Sensor*)m_sensor)->get_house()->set_flag(true);
 	}
 
 };
@@ -482,6 +548,26 @@ public:
 class _316602689_C : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
+
+	class Vertex {
+
+	public:
+		vector<Vertex*> neighbors;
+		Vertex* m_parent;
+		char m_color; // 'w' = white ; 'g' = grey; 'b' = black
+		int m_distance;
+
+		Vertex() : m_parent(nullptr), m_color('w'), m_distance(UINT_MAX) {}
+
+		~Vertex() {}
+	};
+
+	map<pair<int, int>, Vertex*> create_graph_from_matrix(string* matrix, int rows, int cols);
+
+	void delete_graph(map<pair<int, int>, Vertex*> graph);
+
+	Direction bfs(map<pair<int, int>, Vertex*> graph, pair<int, int> s, Vertex* t);
+
 
 public:
 
@@ -494,6 +580,10 @@ public:
 		delete m_sensor;
 	}
 
+	_316602689_C(const _316602689_C&) = delete;
+
+	_316602689_C& operator=(const _316602689_C&) = delete;
+
 	// setSensor is called once when the Algorithm is initialized
 	virtual void setSensor(const AbstractSensor& sensor) {
 		m_sensor = &sensor;
@@ -511,7 +601,7 @@ public:
 	// when steps == MaxSteps - MaxStepsAfterWinner 
 	// parameter stepsTillFinishing == MaxStepsAfterWinner 
 	virtual void aboutToFinish(int stepsTillFinishing){
-
+		((Sensor*)m_sensor)->get_house()->set_flag(true);
 	}
 
 };
