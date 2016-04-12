@@ -167,8 +167,6 @@ public:
 		m_curr_battary_level(init_battary_level), m_curr_location(house->get_house_docking_station()), m_is_active(true),
 		m_this_num_of_steps(0), m_dirt_collected(0), m_position_in_competition(0), m_is_valid(true) {
 		m_house = new House(*house);
-		cout << "sec addr " << (m_house) << endl;
-
 	}
 
 	~Robot(){
@@ -416,7 +414,73 @@ public:
 		int num_of_houses, int num_of_algorithms);
 };
 
+class FilesLister {
 
+protected:
+	vector<string> filesList_;
+	string basePath_;
+
+private:
+	static string concatenateAbsolutePath(const string& dirPath, const string& fileName)
+	{
+		if (dirPath.empty())
+			return fileName;
+		if (dirPath.back() == '/')
+			return dirPath + fileName;
+		return dirPath + "/" + fileName;
+	}
+
+public:
+	FilesLister(const string& basePath)
+		: basePath_(basePath)
+	{
+		this->refresh();
+	}
+
+	virtual void refresh();
+
+	vector<string> getFilesList(){
+		return this->filesList_;
+	}
+};
+
+class FilesListerWithSuffix : public FilesLister {
+protected:
+	void filterFiles();
+
+	static inline bool endsWith(std::string value, std::string ending){
+		if (ending.size() > value.size())
+			return false;
+		return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+	}
+
+	string suffix_;
+
+public:
+	FilesListerWithSuffix(const string& basePath, const string& suffix) : FilesLister(basePath)	, suffix_(suffix){
+		this->filterFiles();
+	}
+
+	virtual void refresh() {
+		FilesLister::refresh();
+		this->filterFiles();
+	}
+};
+
+class HousesLister : public FilesListerWithSuffix {
+public:
+	HousesLister(const string& basePath) : FilesListerWithSuffix(basePath, ".house"){}
+};
+
+class AlgorithmsLister : public FilesListerWithSuffix {
+public:
+	AlgorithmsLister(const string& basePath) : FilesListerWithSuffix(basePath, ".so"){}
+};
+
+class ConfigLister : public FilesListerWithSuffix {
+public:
+	ConfigLister(const string& basePath) : FilesListerWithSuffix(basePath, "config.ini"){}
+};
 
 
 

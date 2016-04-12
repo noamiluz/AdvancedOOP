@@ -8,9 +8,8 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
-#include <time.h>
+#include <dirent.h>
 #include <iomanip>
-#include <queue>
 #include <limits.h>
 
 #include "simulator.h"
@@ -270,6 +269,33 @@ void Simulator::finish_simulation(){
 }
 
 
+void FilesLister::refresh() {
+	DIR *dir;
+	struct dirent *ent;
+	this->filesList_.clear();
+	if ((dir = opendir(this->basePath_.c_str())) != NULL) {
+		while ((ent = readdir(dir)) != NULL) {
+			this->filesList_.push_back(concatenateAbsolutePath(this->basePath_, ent->d_name));
+		}
+		closedir(dir);
+	}
+	else {
+		return;
+	}
+	sort(this->filesList_.begin(), this->filesList_.end());
+}
+
+void FilesListerWithSuffix::filterFiles() {
+	vector<string> temp = this->filesList_;
+	this->filesList_.clear();
+	for (vector<string>::iterator itr = temp.begin(); itr != temp.end(); ++itr){
+		if (endsWith(*itr, this->suffix_))
+		{
+			this->filesList_.push_back(*itr);
+		}
+	}
+}
+
 // returns vector of the full paths to all the files in the 'path_of_directory' directory which
 // their names contains the suffix 'suffix' 
 // path_of_directory could be relative or absolute (and with or without '/')
@@ -367,11 +393,12 @@ bool Main::check_configurations_validity(const map<string, int>& config){
 // read from configuration file and return the configurations map
 map<string, int> Main::get_configurations(const string path){
 	FileParser fp;
+	ConfigLister cl(path);
 	map<string, int> config;
 	map<string, int> empty_config;
 	string full_path;
 	// getting the full path
-	vector<string> result = fp.get_file_paths(path, "config.ini");
+	vector<string> result = cl.getFilesList();
 	if (result.empty()){
 		PRINT_USAGE;
 		return empty_config;
@@ -401,11 +428,12 @@ map<string, int> Main::get_configurations(const string path){
 // read from .house files and parse them into a house array;
 vector<House*> Main::get_houses(string path) {
 	FileParser fp;
+	HousesLister hl(path);
 	vector<House*> house_arr; // deleted in the end of main()
 	vector<House*> empty;
 
 	// getting the full path
-	vector<string> result = fp.get_file_paths(path, "*.house");
+	vector<string> result = hl.getFilesList();
 	if (result.empty()){
 		PRINT_USAGE;
 		return empty;
@@ -416,7 +444,6 @@ vector<House*> Main::get_houses(string path) {
 
 	int num_of_houses = result.size();
 
-	ifstream fin;
 	string name, line;
 	int r, c, max_steps;
 	string* matrix;
@@ -424,6 +451,7 @@ vector<House*> Main::get_houses(string path) {
 	string::size_type index;
 	for (int i = 0; i < num_of_houses; i++) // iterate on the houses in sorted order
 	{
+		ifstream fin;
 		fin.open(result[i]);
 		if (!fin.is_open()){
 			error_list.push_back(fp.get_file_name(result[i]) + ": cannot open file");
@@ -455,6 +483,7 @@ vector<House*> Main::get_houses(string path) {
 			matrix[j] = string(line, 0, c);
 			//found_docking += count(matrix[j].begin(), matrix[j].end(), 'D');
 		}
+
 		int count_docking = fix_house_matrix(matrix, r, c);
 		if (count_docking == 0 || count_docking > 1){
 			if (count_docking == 0){
@@ -508,7 +537,7 @@ int Main::fix_house_matrix(string *matrix, int rows, int cols){
 			matrix[i].append((cols - matrix[i].size()), ' ');
 		}
 	}
-	//second - check bounderis to be 'W', if 'D' has overwrite, change found_docking
+	//second - check bounderis to be 'W', if 'D' has overwrite, change count_docking
 	for (int j = 0; j < rows; j++)
 	{
 		if (j == 0 || (j == rows - 1)){
@@ -524,6 +553,7 @@ int Main::fix_house_matrix(string *matrix, int rows, int cols){
 			count_docking += count(matrix[j].begin(), matrix[j].end(), 'D');
 		}
 	}
+
 	return count_docking;
 }
 
@@ -538,31 +568,21 @@ tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> Main::get_algorithms_and_sens
 	for (int i = 0; i < 3; i++){
 		sensor_arr.push_back(new Sensor());
 	}
-	cout << "1 - address " << &(*sensor_arr[0]) << endl;
-	cout << "2 - address " << &(*sensor_arr[1]) << endl;
-	cout << "3 - address " << &(*sensor_arr[2]) << endl;
 
 	vector<AbstractAlgorithm*> algorithm_arr;
 	algorithm_arr.push_back(new _316602689_A(*sensor_arr[0], config));
 	algorithm_arr.push_back(new _316602689_B(*sensor_arr[1], config));
 	algorithm_arr.push_back(new _316602689_C(*sensor_arr[2], config));
+	algorithm_names.push_back("_316602689_A");
+	algorithm_names.push_back("_316602689_B");
+	algorithm_names.push_back("_316602689_C");
 	return make_tuple(algorithm_arr, sensor_arr);
-	// building algorithms
-	//AbstractAlgorithm** algorithm_arr = new AbstractAlgorithm*[4];
-	//algorithm_arr[0] = new OurAlgorithm(*sensor_arr[0], config);
-	//algorithm_arr[1] = new EastPrefAlgorithm(*sensor_arr[1], config);
-	//algorithm_arr[2] = new WestPrefAlgorithm(*sensor_arr[2], config);
-	//algorithm_arr[3] = new SouthPrefAlgorithm(*sensor_arr[3], config);
 }
 
 // parse the command line arguments
 // returns a tuple <config_path, house_path, algorithm_path>
 tuple<string, string, string> Main::command_line_arguments(int argc, char* argv[]){
-	// number of arguments has to be odd
-	if (argc % 2 == 0){
-		PRINT_USAGE;
-		return make_tuple("", "", "");
-	}
+	
 	int config_index = -1, house_index = -1, algorithm_index = -1;
 	string config_path, house_path, algorithm_path;
 	int i = 1;	// starting from i=1 (excluding the name of the program)
@@ -571,36 +591,54 @@ tuple<string, string, string> Main::command_line_arguments(int argc, char* argv[
 			config_index = i;
 			if (i + 1 < argc && strcmp(argv[i + 1], "-config") && strcmp(argv[i + 1], "-house_path") && strcmp(argv[i + 1], "-algorithm_path")){ // make sure that there is a path
 				config_path = argv[i + 1];
+				i += 2;
 			}
 			else {
-				PRINT_USAGE;
-				return make_tuple("","","");
+				if (i + 1 >= argc || (i + 1 < argc && (!strcmp(argv[i + 1], "-house_path") || !strcmp(argv[i + 1], "-algorithm_path")))){
+					config_path = "./";
+					i++;
+				}
+				else {
+					PRINT_USAGE;
+					return make_tuple("","","");
+				}
 			}
-			i += 2;
 			continue;
 		}
 		if (!strcmp(argv[i], "-house_path") && house_index == -1){ // if at the current there is '-house_path' and its the first time
 			house_index = i;
 			if (i + 1 < argc && strcmp(argv[i + 1], "-config") && strcmp(argv[i + 1], "-house_path") && strcmp(argv[i + 1], "-algorithm_path")){ // make sure that there is a path
 				house_path = argv[i + 1];
+				i += 2;
 			}
 			else {
-				PRINT_USAGE;
-				return make_tuple("", "", "");
+				if (i + 1 >= argc || (i + 1 < argc && (!strcmp(argv[i + 1], "-config") || !strcmp(argv[i + 1], "-algorithm_path")))){
+					house_path = "./";
+					i++;
+				}
+				else {
+					PRINT_USAGE;
+					return make_tuple("", "", "");
+				}
 			}
-			i += 2;
 			continue;
 		}
 		if (!strcmp(argv[i], "-algorithm_path") && algorithm_index == -1){ // if at the current there is '-algorithm_path' and its the first time
 			algorithm_index = i;
 			if (i + 1 < argc && strcmp(argv[i + 1], "-config") && strcmp(argv[i + 1], "-house_path") && strcmp(argv[i + 1], "-algorithm_path")){ // make sure that there is a path
 				algorithm_path = argv[i + 1];
+				i += 2;
 			}
 			else {
-				PRINT_USAGE;
-				return make_tuple("", "", "");
+				if (i + 1 >= argc || (i + 1 < argc && (!strcmp(argv[i + 1], "-house_path") || !strcmp(argv[i + 1], "-config")))){
+					algorithm_path = "./";
+					i++;
+				}
+				else {
+					PRINT_USAGE;
+					return make_tuple("", "", "");
+				}
 			}
-			i += 2;
 			continue;
 		}
 		else{
@@ -694,11 +732,11 @@ void Main::score_simulation(vector<Simulator*>& sim_arr, map<string, int>& confi
 		{
 			cur_robot = (*sim_arr[i]).get_robot_arr()[j];
 			if (!cur_robot->is_valid()){
-				score_matrix[i][j] = 0;
+				score_matrix[j][i] = 0;
 				continue;
 			}
 			auto loc = cur_robot->get_curr_location();
-			score_matrix[i][j] = (*sim_arr[i]).calculate_score(cur_robot->get_position_in_competition(), (*sim_arr[i]).get_winner_num_steps(),
+			score_matrix[j][i] = (*sim_arr[i]).calculate_score(cur_robot->get_position_in_competition(), (*sim_arr[i]).get_winner_num_steps(),
 				cur_robot->get_num_of_steps(), cur_robot->get_dirt_collected(), cur_robot->get_house()->get_sum_dirt_in_house(),
 				cur_robot->get_house()->get_house_matrix()[loc.first][loc.second] == 'D');
 		}
@@ -732,6 +770,9 @@ double Main::calc_avg(int** score_matrix, int index, int num_of_houses){
 // prints errors after that, if exist.
 // ASSUMPTION: the algorithm_arr and house_arr are sorted, so robot_matrix as well
 void Main::print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matrix){
+	
+	// for WINDOWS debug
+	//house_names.push_back("sample1");
 
 	const int num_of_chars_cols = 14 + 11 * (sim_arr.size() + 1) + 1;
 	const int num_of_chars_rows = 2 * ((*sim_arr[0]).get_num_of_algorithms() + 1) + 1;
@@ -744,28 +785,32 @@ void Main::print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matri
 			continue;
 		}
 		if (i == 1){
-			string tmp("|             ");
+			stringstream tmp1;
+			tmp1 << "|             ";
 			for (int j = 0; j < length; j++){
-				tmp += "|" + trim_title(house_names[j]);
+				tmp1 << "|" << trim_title(house_names[j]);
 			}
-			tmp += "|AVG       |";
-			cout << tmp << endl;
+			tmp1 << "|AVG       |";
+			cout << tmp1.str() << endl;
 			continue;
 		}
 
 		int algo_index = ((i - 1) / 2) - 1;
-		string tmp = "|" + algorithm_names[algo_index] + " ";
+		stringstream tmp;
+		tmp << "|";
+		string name(algorithm_names[algo_index]);
+		tmp << name << string(13 - name.length(), ' ');
 		for (int j = 0; j < length; j++)
 		{
 			string score = to_string(score_matrix[algo_index][j]);
-			tmp += "|" + string(10 - score.length(), ' ') + score;
+			tmp << "|" << string(10 - score.length(), ' ') << score;
 		}
 		double d = calc_avg(score_matrix, algo_index, sim_arr.size());
 		stringstream stream;
 		stream << fixed << setprecision(2) << d;
-		string s = stream.str();
-		tmp += "|" + string(10 - s.length(), ' ') + s + "|";
-		cout << tmp << endl;
+		string s(stream.str());
+		tmp << "|" << string(10 - s.length(), ' ') << s << "|";
+		cout << tmp.str() << endl;
 	}
 
 	if (!error_list.empty()){ // if there are errors, print them
@@ -823,20 +868,21 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
-	/*for debug in windows
+	/*//for debug in windows
 	map<string, int> config;
 	config.insert({ "MaxStepsAfterWinner", 200 });
 	config.insert({ "BatteryCapacity", 400 });
 	config.insert({ "BatteryConsumptionRate", 1 });
-	config.insert({ "BatteryRechargeRate", 20 });
-	*/
+	config.insert({ "BatteryRechargeRate", 20 });*/
+	
 	vector<House*> house_arr = main.get_houses(house_path); // getting houses arr 
 	if (house_arr.empty()){
 		return 1;
 	}
-	// for windows debug
-	//vector<House*> house_arr;
-	//house_arr.push_back(create_house_hard_coded());
+	/*// for windows debug
+	vector<House*> house_arr;
+	house_arr.push_back(create_house_hard_coded());*/
+	
 
 
 	auto algorithms_and_sensors = main.get_algorithms_and_sensors(algorithm_path, config);
@@ -852,7 +898,6 @@ int main(int argc, char* argv[])
 	// creating vector of simulators, one for each house
 	vector<Simulator*> simulator_arr;
 	for (int i = 0; i < num_of_houses; i++){
-		cout << "first addr " << (house_arr[i]) << endl;
 		simulator_arr.push_back(new Simulator(config, algorithm_arr, sensor_arr, house_arr[i]));
 	}
 	
