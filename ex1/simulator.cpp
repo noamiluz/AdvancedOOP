@@ -19,7 +19,7 @@
 
 using namespace std;
 
-
+House* create_house_hard_coded();
 // returns the sensor's information of a position in the current house
 // Assumption: m_matrix[x][y] != 'W'
 SensorInformation Sensor::my_sense(const pair<int, int>& position) const {
@@ -538,6 +538,9 @@ tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> Main::get_algorithms_and_sens
 	for (int i = 0; i < 3; i++){
 		sensor_arr.push_back(new Sensor());
 	}
+	cout << "1 - address " << &(*sensor_arr[0]) << endl;
+	cout << "2 - address " << &(*sensor_arr[1]) << endl;
+	cout << "3 - address " << &(*sensor_arr[2]) << endl;
 
 	vector<AbstractAlgorithm*> algorithm_arr;
 	algorithm_arr.push_back(new _316602689_A(*sensor_arr[0], config));
@@ -667,7 +670,7 @@ void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses,
 }
 
 // calculates the score matrix and prints it
-void Main::score_simulation(vector<Simulator>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms){
+void Main::score_simulation(vector<Simulator*>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms){
 	// creating score matrix
 	int** score_matrix = new int*[num_of_algorithms]; // deleted in the end of main()
 	for (int i = 0; i < num_of_algorithms; i++)
@@ -677,8 +680,8 @@ void Main::score_simulation(vector<Simulator>& sim_arr, map<string, int>& config
 
 	for (int i = 0; i < num_of_houses; i++)
 	{
-		if (sim_arr[i].get_winner_num_steps() == sim_arr[i].get_max_steps()){ // if there is no winner, set the winner_num_steps to be simulation_steps
-			sim_arr[i].set_winner_num_steps(sim_arr[i].get_steps());
+		if ((*sim_arr[i]).get_winner_num_steps() == (*sim_arr[i]).get_max_steps()){ // if there is no winner, set the winner_num_steps to be simulation_steps
+			(*sim_arr[i]).set_winner_num_steps((*sim_arr[i]).get_steps());
 		}
 	}
 	
@@ -689,13 +692,13 @@ void Main::score_simulation(vector<Simulator>& sim_arr, map<string, int>& config
 	{
 		for (int j = 0; j < num_of_algorithms; j++)
 		{
-			cur_robot = sim_arr[i].get_robot_arr()[j];
+			cur_robot = (*sim_arr[i]).get_robot_arr()[j];
 			if (!cur_robot->is_valid()){
 				score_matrix[i][j] = 0;
 				continue;
 			}
 			auto loc = cur_robot->get_curr_location();
-			score_matrix[i][j] = sim_arr[i].calculate_score(cur_robot->get_position_in_competition(), sim_arr[i].get_winner_num_steps(),
+			score_matrix[i][j] = (*sim_arr[i]).calculate_score(cur_robot->get_position_in_competition(), (*sim_arr[i]).get_winner_num_steps(),
 				cur_robot->get_num_of_steps(), cur_robot->get_dirt_collected(), cur_robot->get_house()->get_sum_dirt_in_house(),
 				cur_robot->get_house()->get_house_matrix()[loc.first][loc.second] == 'D');
 		}
@@ -717,7 +720,7 @@ string Main::trim_title(string& title){
 }
 
 // calculate average score (on all houses) of an algorithm with index 'index'
-double Main::avg(int** score_matrix, int index, int num_of_houses){
+double Main::calc_avg(int** score_matrix, int index, int num_of_houses){
 	int sum = 0;
 	for (int i = 0; i < num_of_houses; i++){
 		sum += score_matrix[index][i];
@@ -728,10 +731,10 @@ double Main::avg(int** score_matrix, int index, int num_of_houses){
 // prints the score matrix according to given format.
 // prints errors after that, if exist.
 // ASSUMPTION: the algorithm_arr and house_arr are sorted, so robot_matrix as well
-void Main::print_score_and_errors(vector<Simulator>& sim_arr, int** score_matrix){
+void Main::print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matrix){
 
 	const int num_of_chars_cols = 14 + 11 * (sim_arr.size() + 1) + 1;
-	const int num_of_chars_rows = 2 * (sim_arr[0].get_num_of_algorithms() + 1) + 1;
+	const int num_of_chars_rows = 2 * ((*sim_arr[0]).get_num_of_algorithms() + 1) + 1;
 	const int length = sim_arr.size();
 	string dashes_line(num_of_chars_cols, '-');
 	for (int i = 0; i < num_of_chars_rows; i++)
@@ -757,7 +760,7 @@ void Main::print_score_and_errors(vector<Simulator>& sim_arr, int** score_matrix
 			string score = to_string(score_matrix[algo_index][j]);
 			tmp += "|" + string(10 - score.length(), ' ') + score;
 		}
-		double d = avg(score_matrix, algo_index, sim_arr.size());
+		double d = calc_avg(score_matrix, algo_index, sim_arr.size());
 		stringstream stream;
 		stream << fixed << setprecision(2) << d;
 		string s = stream.str();
@@ -774,8 +777,13 @@ void Main::print_score_and_errors(vector<Simulator>& sim_arr, int** score_matrix
 }
 
 // freeing all the memory left to free in the program
-void Main::deleting_memory(vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
+void Main::deleting_memory(vector<Simulator*> sim_arr, vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
 	int num_of_houses, int num_of_algorithms){
+	// delete simulator array
+	for (int i = 0; i < num_of_houses; ++i){
+		delete sim_arr[i];
+	}
+
 	// delete houses array
 	for (int i = 0; i < num_of_houses; ++i){
 		delete house_arr[i];
@@ -809,15 +817,27 @@ int main(int argc, char* argv[])
 	if (!config_path.compare("") && !house_path.compare("") && !algorithm_path.compare("")){ // error
 		return 1;
 	}
-
+	
 	map<string, int> config = main.get_configurations(config_path); // getting configurations map
 	if (config.empty()){
 		return 1;
 	}
+	
+	/*for debug in windows
+	map<string, int> config;
+	config.insert({ "MaxStepsAfterWinner", 200 });
+	config.insert({ "BatteryCapacity", 400 });
+	config.insert({ "BatteryConsumptionRate", 1 });
+	config.insert({ "BatteryRechargeRate", 20 });
+	*/
 	vector<House*> house_arr = main.get_houses(house_path); // getting houses arr 
 	if (house_arr.empty()){
 		return 1;
 	}
+	// for windows debug
+	//vector<House*> house_arr;
+	//house_arr.push_back(create_house_hard_coded());
+
 
 	auto algorithms_and_sensors = main.get_algorithms_and_sensors(algorithm_path, config);
 	vector<AbstractAlgorithm*> algorithm_arr = get<0>(algorithms_and_sensors); // getting algorithms arr
@@ -830,15 +850,16 @@ int main(int argc, char* argv[])
 	const int num_of_algorithms = algorithm_arr.size();
 
 	// creating vector of simulators, one for each house
-	vector<Simulator> simulator_arr;
+	vector<Simulator*> simulator_arr;
 	for (int i = 0; i < num_of_houses; i++){
-		simulator_arr.emplace_back(config, algorithm_arr, sensor_arr, house_arr[i]);
+		cout << "first addr " << (house_arr[i]) << endl;
+		simulator_arr.push_back(new Simulator(config, algorithm_arr, sensor_arr, house_arr[i]));
 	}
 	
 
 	// simulate the simulator for each house
 	for (int i = 0; i < num_of_houses; i++){
-		main.simulate(simulator_arr[i], config, num_of_houses, num_of_algorithms);
+		main.simulate(*simulator_arr[i], config, num_of_houses, num_of_algorithms);
 	}
 	
 	
@@ -846,7 +867,7 @@ int main(int argc, char* argv[])
 	main.score_simulation(simulator_arr, config, num_of_houses, num_of_algorithms);
 
 	// freeing memory
-	main.deleting_memory(house_arr, algorithm_arr, sensor_arr, num_of_houses, num_of_algorithms);
+	main.deleting_memory(simulator_arr, house_arr, algorithm_arr, sensor_arr, num_of_houses, num_of_algorithms);
 	
 	return 0;
 }
@@ -857,14 +878,15 @@ int main(int argc, char* argv[])
 
 // step is called by the simulation for each time unit
 Direction _316602689_A::step() {
-	Sensor* sensor = (Sensor*)m_sensor;
-	if (sensor->get_house()->get_flag()){
-		auto graph = create_graph_from_matrix(sensor->get_house()->get_house_matrix(), sensor->get_house()->get_house_matrix_rows(), sensor->get_house()->get_house_matrix_cols());
-		Direction d = bfs(graph, sensor->get_curr_location(), graph[sensor->get_house()->get_house_docking_station()]);
-		delete_graph(graph);
+	if (m_about_to_finish_flag){		
+		if (m_path_stack.empty()){
+			return Direction::Stay;
+		}
+		Direction d = m_path_stack.top();
+		m_path_stack.pop();
 		return d;
 	}
-	else {
+	else { // not in about to finish
 		SensorInformation s_i = m_sensor->sense();
 		if (s_i.dirtLevel > 0){// current position still dirty
 			return Direction::Stay;
@@ -873,7 +895,33 @@ Direction _316602689_A::step() {
 			// go to the following direction, in case there isn't a wall there by this order of prefernce: East, West, South, North
 			for (int i = 0; i < 4; i++)
 			{
-				if (!s_i.isWall[i]) return (Direction)i;
+				if (!s_i.isWall[i]){
+					// push to stack the return step
+					switch ((Direction)i)
+					{
+					case Direction::North:{
+						m_path_stack.push(Direction::South);
+						break;
+						}
+					case Direction::South:{
+						m_path_stack.push(Direction::North);
+						break;
+					}
+					case Direction::East:{
+						m_path_stack.push(Direction::West);
+						break;
+					}
+					case Direction::West:{
+						m_path_stack.push(Direction::East);
+						break;
+					}
+					default:
+						m_path_stack.push(Direction::Stay); // should not get here
+						break;
+					}
+
+					return (Direction)i;
+				}// end if
 			}
 			return Direction::Stay;//never should get here
 		}
@@ -881,359 +929,131 @@ Direction _316602689_A::step() {
 	
 }
 
-map<pair<int, int>, _316602689_A::Vertex*> _316602689_A::create_graph_from_matrix(string* matrix, int rows, int cols){
-	map<pair<int, int>, _316602689_A::Vertex*> graph;
-	// creating the vertices
-	for (int i = 0; i < rows; i++)
-	{
-		for (int j = 0; j < cols; j++)
-		{
-			if (matrix[i][j] != 'W'){
-				graph[{i, j}] = new _316602689_A::Vertex();
-			}
-		}
-	}
-
-	// updating the neighbors vector for each vertex
-	for (auto& pair : graph){
-		SensorInformation s_i = ((Sensor*)m_sensor)->my_sense(pair.first);
-		for (int i = 0; i < 4; i++)
-		{
-			if (s_i.isWall[i]){
-				continue;
-			}
-			switch ((Direction)i)
-			{
-			case Direction::North:
-				pair.second->neighbors.push_back(graph[{ pair.first.first - 1, pair.first.second }]);
-				break;
-			case Direction::South:
-				pair.second->neighbors.push_back(graph[{ pair.first.first + 1, pair.first.second }]);
-				break;
-			case Direction::East:
-				pair.second->neighbors.push_back(graph[{ pair.first.first, pair.first.second + 1}]);
-				break;
-			case Direction::West:
-				pair.second->neighbors.push_back(graph[{ pair.first.first, pair.first.second - 1}]);
-				break;
-			default:
-				break;
-			}
-		}		
-	}
-
-	return graph;
-}
-
-
-void _316602689_A::delete_graph(map<pair<int, int>, _316602689_A::Vertex*> graph){
-	for (auto& pair : graph){
-		delete pair.second;
-	}
-}
-
-Direction _316602689_A::bfs(map<pair<int, int>, _316602689_A::Vertex*> graph, pair<int, int> s, _316602689_A::Vertex* t){
-	// do the bfs
-	t->m_color = 'g';
-	t->m_distance = 0;
-	
-	Vertex *source = nullptr, *cur = nullptr;
-	queue<Vertex*> q;
-	q.push(t);
-	bool found_t = false;
-
-	while (!q.empty() && !found_t){
-		cur = q.front();
-		for (Vertex *v : cur->neighbors){
-			if (v->m_color == 'w'){
-				v->m_color = 'g';
-				v->m_distance = cur->m_distance + 1;
-				v->m_parent = cur;
-				q.push(v);
-				if (graph[s] == v){
-					found_t = true;
-					source = v;
-				}
-			}
-		}
-		q.pop();
-		cur->m_color = 'b';
-	}
-
-	// find location of parent
-	pair<int, int> parent_loc;
-	for (auto& pair : graph){
-		if (pair.second == source->m_parent){
-			parent_loc = pair.first;
-		}
-	}
-	
-	// calculate where is parent in relation to s
-	pair<int, int> d = { s.first - parent_loc.first, s.second - parent_loc.second };
-	if (d.first == 0){
-		if (d.second == 1){ // parent is left to s
-			return Direction::West;
-		}
-		else{ // parent is right to s
-			return Direction::East;
-		}
-	}
-	if (d.second == 0){
-		if (d.first == 1){ // parent is above s
-			return Direction::North;
-		}
-		else { // parent is below s
-			return Direction::South;
-		}
-	}
-	return Direction::Stay; // will never come to this 
-}
-
 // step is called by the simulation for each time unit
 Direction _316602689_B::step() {
-	SensorInformation s_i = m_sensor->sense();
-	if (s_i.dirtLevel > 0){// current position still dirty
-		return Direction::Stay;
-	}
-	else{// current position is clean
-		// go to the following direction, in case there isn't a wall there by this order of prefernce: West, South, North, East
-		for (int i = 1; i < 5; i++)
-		{
-			if (!s_i.isWall[i%4]) return (Direction)i;
+	if (m_about_to_finish_flag){
+		if (m_path_stack.empty()){
+			return Direction::Stay;
 		}
-		return Direction::Stay;//never should get here
+		Direction d = m_path_stack.top();
+		m_path_stack.pop();
+		return d;
 	}
-}
-
-map<pair<int, int>, _316602689_B::Vertex*> _316602689_B::create_graph_from_matrix(string* matrix, int rows, int cols){
-	map<pair<int, int>, _316602689_B::Vertex*> graph;
-	// creating the vertices
-	for (int i = 0; i < rows; i++)
-	{
-		for (int j = 0; j < cols; j++)
-		{
-			if (matrix[i][j] != 'W'){
-				graph[{i, j}] = new _316602689_B::Vertex();
-			}
+	else { // not in about to finish
+		SensorInformation s_i = m_sensor->sense();
+		if (s_i.dirtLevel > 0){// current position still dirty
+			return Direction::Stay;
 		}
-	}
-
-	// updating the neighbors vector for each vertex
-	for (auto& pair : graph){
-		SensorInformation s_i = ((Sensor*)m_sensor)->my_sense(pair.first);
-		for (int i = 0; i < 4; i++)
-		{
-			if (s_i.isWall[i]){
-				continue;
-			}
-			switch ((Direction)i)
+		else{// current position is clean
+			// go to the following direction, in case there isn't a wall there by this order of prefernce: East, West, South, North
+			for (int i = 1; i < 5; i++)
 			{
-			case Direction::North:
-				pair.second->neighbors.push_back(graph[{ pair.first.first - 1, pair.first.second }]);
-				break;
-			case Direction::South:
-				pair.second->neighbors.push_back(graph[{ pair.first.first + 1, pair.first.second }]);
-				break;
-			case Direction::East:
-				pair.second->neighbors.push_back(graph[{ pair.first.first, pair.first.second + 1}]);
-				break;
-			case Direction::West:
-				pair.second->neighbors.push_back(graph[{ pair.first.first, pair.first.second - 1}]);
-				break;
-			default:
-				break;
+				if (!s_i.isWall[i % 4]){
+					// push to stack the return step
+					switch ((Direction)i)
+					{
+					case Direction::North:{
+						m_path_stack.push(Direction::South);
+						break;
+					}
+					case Direction::South:{
+						m_path_stack.push(Direction::North);
+						break;
+					}
+					case Direction::East:{
+						m_path_stack.push(Direction::West);
+						break;
+					}
+					case Direction::West:{
+						m_path_stack.push(Direction::East);
+						break;
+					}
+					default:
+						m_path_stack.push(Direction::Stay); // should not get here
+						break;
+					}
+
+					return (Direction)i;
+				}// end if
 			}
+			return Direction::Stay;//never should get here
 		}
 	}
 
-	return graph;
 }
-
-
-void _316602689_B::delete_graph(map<pair<int, int>, _316602689_B::Vertex*> graph){
-	for (auto& pair : graph){
-		delete pair.second;
-	}
-}
-
-Direction _316602689_B::bfs(map<pair<int, int>, _316602689_B::Vertex*> graph, pair<int, int> s, _316602689_B::Vertex* t){
-	// do the bfs
-	t->m_color = 'g';
-	t->m_distance = 0;
-
-	Vertex *source = nullptr, *cur = nullptr;
-	queue<Vertex*> q;
-	q.push(t);
-	bool found_t = false;
-
-	while (!q.empty() && !found_t){
-		cur = q.front();
-		for (Vertex *v : cur->neighbors){
-			if (v->m_color == 'w'){
-				v->m_color = 'g';
-				v->m_distance = cur->m_distance + 1;
-				v->m_parent = cur;
-				q.push(v);
-				if (graph[s] == v){
-					found_t = true;
-					source = v;
-				}
-			}
-		}
-		q.pop();
-		cur->m_color = 'b';
-	}
-
-	// find location of parent
-	pair<int, int> parent_loc;
-	for (auto& pair : graph){
-		if (pair.second == source->m_parent){
-			parent_loc = pair.first;
-		}
-	}
-
-	// calculate where is parent in relation to s
-	pair<int, int> d = { s.first - parent_loc.first, s.second - parent_loc.second };
-	if (d.first == 0){
-		if (d.second == 1){ // parent is left to s
-			return Direction::West;
-		}
-		else{ // parent is right to s
-			return Direction::East;
-		}
-	}
-	if (d.second == 0){
-		if (d.first == 1){ // parent is above s
-			return Direction::North;
-		}
-		else { // parent is below s
-			return Direction::South;
-		}
-	}
-	return Direction::Stay; // will never come to this 
-}
-
 
 // step is called by the simulation for each time unit
 Direction _316602689_C::step() {
-	SensorInformation s_i = m_sensor->sense();
-	if (s_i.dirtLevel > 0){// current position still dirty
-		return Direction::Stay;
-	}
-	else{// current position is clean
-		// go to the following direction, in case there isn't a wall there by this order of prefernce: South, North, East, West
-		for (int i = 2; i < 6; i++)
-		{
-			if (!s_i.isWall[i % 4]) return (Direction)i;
+	if (m_about_to_finish_flag){
+		if (m_path_stack.empty()){
+			return Direction::Stay;
 		}
-		return Direction::Stay;//never should get here
+		Direction d = m_path_stack.top();
+		m_path_stack.pop();
+		return d;
 	}
-}
-
-map<pair<int, int>, _316602689_C::Vertex*> _316602689_C::create_graph_from_matrix(string* matrix, int rows, int cols){
-	map<pair<int, int>, _316602689_C::Vertex*> graph;
-	// creating the vertices
-	for (int i = 0; i < rows; i++)
-	{
-		for (int j = 0; j < cols; j++)
-		{
-			if (matrix[i][j] != 'W'){
-				graph[{i, j}] = new _316602689_C::Vertex();
-			}
+	else { // not in about to finish
+		SensorInformation s_i = m_sensor->sense();
+		if (s_i.dirtLevel > 0){// current position still dirty
+			return Direction::Stay;
 		}
-	}
-
-	// updating the neighbors vector for each vertex
-	for (auto& pair : graph){
-		SensorInformation s_i = ((Sensor*)m_sensor)->my_sense(pair.first);
-		for (int i = 0; i < 4; i++)
-		{
-			if (s_i.isWall[i]){
-				continue;
-			}
-			switch ((Direction)i)
+		else{// current position is clean
+			// go to the following direction, in case there isn't a wall there by this order of prefernce: East, West, South, North
+			for (int i = 2; i < 6; i++)
 			{
-			case Direction::North:
-				pair.second->neighbors.push_back(graph[{ pair.first.first - 1, pair.first.second }]);
-				break;
-			case Direction::South:
-				pair.second->neighbors.push_back(graph[{ pair.first.first + 1, pair.first.second }]);
-				break;
-			case Direction::East:
-				pair.second->neighbors.push_back(graph[{ pair.first.first, pair.first.second + 1}]);
-				break;
-			case Direction::West:
-				pair.second->neighbors.push_back(graph[{ pair.first.first, pair.first.second - 1}]);
-				break;
-			default:
-				break;
+				if (!s_i.isWall[i % 4]){
+					// push to stack the return step
+					switch ((Direction)i)
+					{
+					case Direction::North:{
+						m_path_stack.push(Direction::South);
+						break;
+					}
+					case Direction::South:{
+						m_path_stack.push(Direction::North);
+						break;
+					}
+					case Direction::East:{
+						m_path_stack.push(Direction::West);
+						break;
+					}
+					case Direction::West:{
+						m_path_stack.push(Direction::East);
+						break;
+					}
+					default:
+						m_path_stack.push(Direction::Stay); // should not get here
+						break;
+					}
+
+					return (Direction)i;
+				}// end if
 			}
+			return Direction::Stay;//never should get here
 		}
 	}
 
-	return graph;
 }
 
 
-void _316602689_C::delete_graph(map<pair<int, int>, _316602689_C::Vertex*> graph){
-	for (auto& pair : graph){
-		delete pair.second;
-	}
-}
+//// to delete///
+House* create_house_hard_coded() {
+	const int rows = 8;
+	const int cols = 10;
+	int found_docking = 0;
+	string* matrix = new string[rows]; // deleted in the destructor of House
+	matrix[0] = "WWWWWWWWWW";
+	matrix[1] = "W22  DW59W";
+	matrix[2] = "W  W 1119W";
+	matrix[3] = "W WWW3 WWW";
+	matrix[4] = "W6   3W  W";
+	matrix[5] = "W78W  W  W";
+	matrix[6] = "W99W  W  W";
+	matrix[7] = "WWWWWWWWWW";
 
-Direction _316602689_C::bfs(map<pair<int, int>, _316602689_C::Vertex*> graph, pair<int, int> s, _316602689_C::Vertex* t){
-	// do the bfs
-	t->m_color = 'g';
-	t->m_distance = 0;
-
-	Vertex *source = nullptr, *cur = nullptr;
-	queue<Vertex*> q;
-	q.push(t);
-	bool found_t = false;
-
-	while (!q.empty() && !found_t){
-		cur = q.front();
-		for (Vertex *v : cur->neighbors){
-			if (v->m_color == 'w'){
-				v->m_color = 'g';
-				v->m_distance = cur->m_distance + 1;
-				v->m_parent = cur;
-				q.push(v);
-				if (graph[s] == v){
-					found_t = true;
-					source = v;
-				}
-			}
-		}
-		q.pop();
-		cur->m_color = 'b';
+	for (int i = 0; i < rows; i++){//count docking stations
+		found_docking += count(matrix[i].begin(), matrix[i].end(), 'D');
 	}
 
-	// find location of parent
-	pair<int, int> parent_loc;
-	for (auto& pair : graph){
-		if (pair.second == source->m_parent){
-			parent_loc = pair.first;
-		}
-	}
-
-	// calculate where is parent in relation to s
-	pair<int, int> d = { s.first - parent_loc.first, s.second - parent_loc.second };
-	if (d.first == 0){
-		if (d.second == 1){ // parent is left to s
-			return Direction::West;
-		}
-		else{ // parent is right to s
-			return Direction::East;
-		}
-	}
-	if (d.second == 0){
-		if (d.first == 1){ // parent is above s
-			return Direction::North;
-		}
-		else { // parent is below s
-			return Direction::South;
-		}
-	}
-	return Direction::Stay; // will never come to this 
+	return new House("Simple1", 1200, rows, cols, pair<int, int>(1, 5), matrix); // deleted in the end of main()
 }

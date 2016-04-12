@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <stack>
 
 #include "AbstractAlgorithm.h"
 #include "AbstractSensor.h"
@@ -163,9 +164,11 @@ class Robot{
 public:
 
 	Robot(int init_battary_level, House* house) :
-		m_curr_battary_level(init_battary_level), m_curr_location(m_house->get_house_docking_station()), m_is_active(true),
+		m_curr_battary_level(init_battary_level), m_curr_location(house->get_house_docking_station()), m_is_active(true),
 		m_this_num_of_steps(0), m_dirt_collected(0), m_position_in_competition(0), m_is_valid(true) {
 		m_house = new House(*house);
+		cout << "sec addr " << (m_house) << endl;
+
 	}
 
 	~Robot(){
@@ -396,20 +399,20 @@ public:
 	void simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms);
 
 	// calculates the score matrix and prints it
-	void score_simulation(vector<Simulator>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms);
+	void score_simulation(vector<Simulator*>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms);
 
 	// trim title in the score matrix to be up to 9 chars and aligned to left
 	string trim_title(string& title);
 
 	// calculate average score (on all houses) of an algorithm with index 'index'
-	double avg(int** score_matrix, int index, int num_of_houses);
+	double calc_avg(int** score_matrix, int index, int num_of_houses);
 	
 	// prints the score matrix according to given format.
 	// prints errors after that, if exist.
-	void print_score_and_errors(vector<Simulator>& sim_arr, int** score_matrix);
+	void print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matrix);
 
 	// freeing all the memory left to free in the program
-	void deleting_memory(vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
+	void deleting_memory(vector<Simulator*> sim_arr, vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
 		int num_of_houses, int num_of_algorithms);
 };
 
@@ -423,30 +426,11 @@ public:
 class _316602689_A : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
-
-	class Vertex {
-
-	public:
-		vector<Vertex*> neighbors;
-		Vertex* m_parent;
-		char m_color; // 'w' = white ; 'g' = grey; 'b' = black
-		int m_distance;
-
-		Vertex() : m_parent(nullptr), m_color('w'), m_distance(UINT_MAX) {}
-
-		~Vertex() {}
-	};
-
-	map<pair<int, int>, Vertex*> create_graph_from_matrix(string* matrix, int rows, int cols);
-
-	void delete_graph(map<pair<int, int>, Vertex*> graph);
-
-	Direction bfs(map<pair<int, int>, Vertex*> graph, pair<int, int> s, Vertex* t);
-
-
+	stack<Direction> m_path_stack; // current house path stack
+	bool m_about_to_finish_flag;
 public:
 
-	_316602689_A(const AbstractSensor& sensor, map<string, int>& config) {
+	_316602689_A(const AbstractSensor& sensor, map<string, int>& config) : m_about_to_finish_flag(false){
 		setSensor(sensor);
 		setConfiguration(config);
 	}
@@ -476,7 +460,7 @@ public:
 	// when steps == MaxSteps - MaxStepsAfterWinner 
 	// parameter stepsTillFinishing == MaxStepsAfterWinner 
 	virtual void aboutToFinish(int stepsTillFinishing){
-		((Sensor*)m_sensor)->get_house()->set_flag(true);
+		m_about_to_finish_flag = true;
 	}
 
 };
@@ -485,30 +469,13 @@ public:
 class _316602689_B : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
-
-	class Vertex {
-
-	public:
-		vector<Vertex*> neighbors;
-		Vertex* m_parent;
-		char m_color; // 'w' = white ; 'g' = grey; 'b' = black
-		int m_distance;
-
-		Vertex() : m_parent(nullptr), m_color('w'), m_distance(UINT_MAX) {}
-
-		~Vertex() {}
-	};
-
-	map<pair<int, int>, Vertex*> create_graph_from_matrix(string* matrix, int rows, int cols);
-
-	void delete_graph(map<pair<int, int>, Vertex*> graph);
-
-	Direction bfs(map<pair<int, int>, Vertex*> graph, pair<int, int> s, Vertex* t);
-
+	stack<Direction> m_path_stack; // current house path stack
+	bool m_about_to_finish_flag;
+	
 
 public:
 
-	_316602689_B(const AbstractSensor& sensor, map<string, int>& config) {
+	_316602689_B(const AbstractSensor& sensor, map<string, int>& config) : m_about_to_finish_flag(false){
 		setSensor(sensor);
 		setConfiguration(config);
 	}
@@ -538,7 +505,7 @@ public:
 	// when steps == MaxSteps - MaxStepsAfterWinner 
 	// parameter stepsTillFinishing == MaxStepsAfterWinner 
 	virtual void aboutToFinish(int stepsTillFinishing){
-		((Sensor*)m_sensor)->get_house()->set_flag(true);
+		m_about_to_finish_flag = true;
 	}
 
 };
@@ -548,30 +515,12 @@ public:
 class _316602689_C : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
-
-	class Vertex {
-
-	public:
-		vector<Vertex*> neighbors;
-		Vertex* m_parent;
-		char m_color; // 'w' = white ; 'g' = grey; 'b' = black
-		int m_distance;
-
-		Vertex() : m_parent(nullptr), m_color('w'), m_distance(UINT_MAX) {}
-
-		~Vertex() {}
-	};
-
-	map<pair<int, int>, Vertex*> create_graph_from_matrix(string* matrix, int rows, int cols);
-
-	void delete_graph(map<pair<int, int>, Vertex*> graph);
-
-	Direction bfs(map<pair<int, int>, Vertex*> graph, pair<int, int> s, Vertex* t);
-
-
+	stack<Direction> m_path_stack; // current house path stack
+	bool m_about_to_finish_flag;
+	
 public:
 
-	_316602689_C(const AbstractSensor& sensor, map<string, int>& config) {
+	_316602689_C(const AbstractSensor& sensor, map<string, int>& config): m_about_to_finish_flag(false) {
 		setSensor(sensor);
 		setConfiguration(config);
 	}
@@ -601,7 +550,7 @@ public:
 	// when steps == MaxSteps - MaxStepsAfterWinner 
 	// parameter stepsTillFinishing == MaxStepsAfterWinner 
 	virtual void aboutToFinish(int stepsTillFinishing){
-		((Sensor*)m_sensor)->get_house()->set_flag(true);
+		m_about_to_finish_flag = true;
 	}
 
 };
