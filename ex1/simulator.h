@@ -104,7 +104,7 @@ public:
 		m_curr_location = location;
 	}
 
-	SensorInformation my_sense(pair<int, int> position) const;
+	SensorInformation my_sense(const pair<int, int>& position) const;
 };
 
 

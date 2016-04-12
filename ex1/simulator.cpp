@@ -22,7 +22,7 @@ using namespace std;
 
 // returns the sensor's information of a position in the current house
 // Assumption: m_matrix[x][y] != 'W'
-SensorInformation Sensor::my_sense(pair<int, int> position) const {
+SensorInformation Sensor::my_sense(const pair<int, int>& position) const {
 	SensorInformation result;
 	int x = position.first;
 	int y = position.second;
@@ -480,7 +480,7 @@ vector<House*> Main::get_houses(string path) {
 	}
 
 	if (house_arr.empty()){ // ALL houses are invalid
-		cout << "All house files in target folder '" << path << "' cannot be opened or are invalid :" << endl;
+		cout << "All house files in target folder '" << path << "' cannot be opened or are invalid:" << endl;
 		print_errors(error_list);
 		return empty;
 	}
