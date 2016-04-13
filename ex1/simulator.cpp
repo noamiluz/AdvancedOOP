@@ -23,7 +23,7 @@
 
 using namespace std;
 
-typedef AbstractAlgorithm *maker_t(const AbstractSensor& sensor, map<string, int>& config);
+typedef AbstractAlgorithm *maker_t();
 
 // our global factory for making shapes 
 map<string, maker_t *, less<string> > factory;
@@ -616,9 +616,13 @@ tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> Main::get_algorithms_and_sens
 			continue;
 		}
 		dl_arr.push_back(dlib);
-		Sensor* sensor = new Sensor(); // will be deleted in the algorithm destructor
+		Sensor* sensor = new Sensor(); // will be deleted in the end of main
 		algorithm_names.push_back(algo_name);
-		algorithm_arr.push_back(factory[algo_name](*sensor, config)); // will be deleted in the end of main
+		AbstractAlgorithm* algo = factory[algo_name]();// will be deleted in the end of main
+		algo->setSensor(*sensor);
+		algo->setConfiguration(config);
+		algorithm_arr.push_back(algo); 
+
 		sensor_arr.push_back(sensor);
 	}
 
@@ -908,17 +912,16 @@ void Main::deleting_memory(vector<Simulator*> sim_arr, vector<House*>& house_arr
 		delete algorithm_arr[i];
 	}
 	
+	// close all dynamic links we opened
 	int length = dl_arr.size();
 	for (int i = 0; i < length; i++){
-		dlclose(dl_arr[i]); // close all dynamic links we opened
+		dlclose(dl_arr[i]); 
 	}
 
-	// delete sensor array pointer only - all sensor are being deleted in algorithm destructor
-	//for (int i = 0; i < num_of_algorithms; i++)
-	//{
-	//	delete sensor_arr[i];
-	//}
-
+	// delete sensors array
+	for (int i = 0; i < num_of_algorithms; ++i){
+		delete sensor_arr[i];
+	}
 }
 
 

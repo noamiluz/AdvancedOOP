@@ -1,8 +1,9 @@
-#ifndef __316602689_A_H 
-#define __316602689_A_H 
+#ifndef __316602689_B_H 
+#define __316602689_B_H 
 
 #include <stdio.h>
 #include <stack>
+
 #include "AbstractAlgorithm.h"
 
 using namespace std;
@@ -12,23 +13,25 @@ typedef AbstractAlgorithm *maker_t();
 // our global factory for making shapes 
 extern map<string, maker_t *, less<string> > factory;
 
-class _316602689_A : public AbstractAlgorithm{
+class _316602689_B : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
 	stack<Direction> m_path_stack; // current house path stack
 	bool m_about_to_finish_flag;
+
+
 public:
 
-	_316602689_A() : m_about_to_finish_flag(false){
+	_316602689_B() : m_about_to_finish_flag(false){
 	}
 
-	~_316602689_A() {
+	~_316602689_B() {
 		//delete m_sensor;
 	}
 
-	_316602689_A(const _316602689_A&) = delete;
+	_316602689_B(const _316602689_B&) = delete;
 
-	_316602689_A& operator=(const _316602689_A&) = delete;
+	_316602689_B& operator=(const _316602689_B&) = delete;
 
 	// setSensor is called once when the Algorithm is initialized
 	virtual void setSensor(const AbstractSensor& sensor) {
@@ -52,6 +55,4 @@ public:
 
 };
 
-
-
-#endif // __316602689_A_H 
+#endif // __316602689_B_H 

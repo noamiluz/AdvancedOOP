@@ -54,8 +54,8 @@ Direction _316602689_B::step() {
 }
 
 extern "C" {
-	AbstractAlgorithm *maker(const AbstractSensor& sensor, map<string, int>& config){
-		return new _316602689_B(sensor, config);
+	AbstractAlgorithm *maker(){
+		return new _316602689_B();
 	}
 
 	class proxy {

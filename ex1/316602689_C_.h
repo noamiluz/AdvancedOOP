@@ -7,7 +7,7 @@
 
 using namespace std;
 
-typedef AbstractAlgorithm *maker_t(const AbstractSensor& sensor, map<string, int>& config);
+typedef AbstractAlgorithm *maker_t();
 
 // our global factory for making shapes 
 extern map<string, maker_t *, less<string> > factory;
@@ -20,13 +20,11 @@ class _316602689_C : public AbstractAlgorithm{
 
 public:
 
-	_316602689_C(const AbstractSensor& sensor, map<string, int>& config) : m_about_to_finish_flag(false) {
-		setSensor(sensor);
-		setConfiguration(config);
+	_316602689_C() : m_about_to_finish_flag(false) {
 	}
 
 	~_316602689_C() {
-		delete m_sensor;
+		//delete m_sensor;
 	}
 
 	_316602689_C(const _316602689_C&) = delete;
