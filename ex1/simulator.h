@@ -365,6 +365,7 @@ class Main {
 	vector<string> error_list; // error list to be printed at the end
 	vector<string> house_names; // SORTED names of VALID houses files without '.house'
 	vector<string> algorithm_names; // SORTED names of VALID algorithms files without '.so'
+	vector<void*> dl_arr; // vector to hold handles for dynamic libs 
 	
 public:
 
@@ -431,9 +432,7 @@ private:
 	}
 
 public:
-	FilesLister(const string& basePath)
-		: basePath_(basePath)
-	{
+	FilesLister(const string& basePath) : basePath_(basePath){
 		this->refresh();
 	}
 
@@ -480,141 +479,4 @@ public:
 class ConfigLister : public FilesListerWithSuffix {
 public:
 	ConfigLister(const string& basePath) : FilesListerWithSuffix(basePath, "config.ini"){}
-};
-
-
-
-
-
-// ex2 #1 algorithm
-class _316602689_A : public AbstractAlgorithm{
-	const AbstractSensor* m_sensor;
-	map<string, int> m_config; // configuration properties
-	stack<Direction> m_path_stack; // current house path stack
-	bool m_about_to_finish_flag;
-public:
-
-	_316602689_A(const AbstractSensor& sensor, map<string, int>& config) : m_about_to_finish_flag(false){
-		setSensor(sensor);
-		setConfiguration(config);
-	}
-
-	~_316602689_A() {
-		delete m_sensor;
-	}
-
-	_316602689_A(const _316602689_A&) = delete;
-
-	_316602689_A& operator=(const _316602689_A&) = delete;
-
-	// setSensor is called once when the Algorithm is initialized
-	virtual void setSensor(const AbstractSensor& sensor) {
-		m_sensor = &sensor;
-	}
-
-	// setConfiguration is called once when the Algorithm is initialized - see below 
-	virtual void setConfiguration(map<string, int> config){
-		m_config = config;
-	}
-
-	// step is called by the simulation for each time unit
-	virtual Direction step();
-
-	// this method is called by the simulation either when there is a winner or 
-	// when steps == MaxSteps - MaxStepsAfterWinner 
-	// parameter stepsTillFinishing == MaxStepsAfterWinner 
-	virtual void aboutToFinish(int stepsTillFinishing){
-		m_about_to_finish_flag = true;
-	}
-
-};
-
-// ex2 #2 algorithm
-class _316602689_B : public AbstractAlgorithm{
-	const AbstractSensor* m_sensor;
-	map<string, int> m_config; // configuration properties
-	stack<Direction> m_path_stack; // current house path stack
-	bool m_about_to_finish_flag;
-	
-
-public:
-
-	_316602689_B(const AbstractSensor& sensor, map<string, int>& config) : m_about_to_finish_flag(false){
-		setSensor(sensor);
-		setConfiguration(config);
-	}
-
-	~_316602689_B() {
-		delete m_sensor;
-	}
-
-	_316602689_B(const _316602689_B&) = delete;
-
-	_316602689_B& operator=(const _316602689_B&) = delete;
-
-	// setSensor is called once when the Algorithm is initialized
-	virtual void setSensor(const AbstractSensor& sensor) {
-		m_sensor = &sensor;
-	}
-
-	// setConfiguration is called once when the Algorithm is initialized - see below 
-	virtual void setConfiguration(map<string, int> config){
-		m_config = config;
-	}
-
-	// step is called by the simulation for each time unit
-	virtual Direction step();
-
-	// this method is called by the simulation either when there is a winner or 
-	// when steps == MaxSteps - MaxStepsAfterWinner 
-	// parameter stepsTillFinishing == MaxStepsAfterWinner 
-	virtual void aboutToFinish(int stepsTillFinishing){
-		m_about_to_finish_flag = true;
-	}
-
-};
-
-
-// ex2 #3 algorithm
-class _316602689_C : public AbstractAlgorithm{
-	const AbstractSensor* m_sensor;
-	map<string, int> m_config; // configuration properties
-	stack<Direction> m_path_stack; // current house path stack
-	bool m_about_to_finish_flag;
-	
-public:
-
-	_316602689_C(const AbstractSensor& sensor, map<string, int>& config): m_about_to_finish_flag(false) {
-		setSensor(sensor);
-		setConfiguration(config);
-	}
-
-	~_316602689_C() {
-		delete m_sensor;
-	}
-
-	_316602689_C(const _316602689_C&) = delete;
-
-	_316602689_C& operator=(const _316602689_C&) = delete;
-
-	// setSensor is called once when the Algorithm is initialized
-	virtual void setSensor(const AbstractSensor& sensor) {
-		m_sensor = &sensor;
-	}
-
-	// setConfiguration is called once when the Algorithm is initialized - see below 
-	virtual void setConfiguration(map<string, int> config){
-		m_config = config;
-	}
-
-	// step is called by the simulation for each time unit
-	virtual Direction step();
-
-	// this method is called by the simulation either when there is a winner or 
-	// when steps == MaxSteps - MaxStepsAfterWinner 
-	// parameter stepsTillFinishing == MaxStepsAfterWinner 
-	virtual void aboutToFinish(int stepsTillFinishing){
-		m_about_to_finish_flag = true;
-	}
-
 };

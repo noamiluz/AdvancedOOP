@@ -79,6 +79,9 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="316602689_A_.h" />
+    <ClInclude Include="316602689_B_.h" />
+    <ClInclude Include="316602689_C_.h" />
     <ClInclude Include="AbstractAlgorithm.h" />
     <ClInclude Include="AbstractSensor.h" />
     <ClInclude Include="Direction.h" />
@@ -86,6 +89,9 @@
     <ClInclude Include="simulator.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="316602689_A_.cpp" />
+    <ClCompile Include="316602689_B_.cpp" />
+    <ClCompile Include="316602689_C_.cpp" />
     <ClCompile Include="simulator.cpp" />
   </ItemGroup>
   <ItemGroup>

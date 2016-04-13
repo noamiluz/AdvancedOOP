@@ -33,9 +33,27 @@
     <ClInclude Include="SensorInformation.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="316602689_A_.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="316602689_B_.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="316602689_C_.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="simulator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="316602689_A_.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="316602689_B_.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="316602689_C_.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

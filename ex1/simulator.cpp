@@ -8,9 +8,14 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
-#include <dirent.h>
+
 #include <iomanip>
 #include <limits.h>
+
+#include <dlfcn.h> 
+#include <dirent.h>
+
+
 
 #include "simulator.h"
 
@@ -18,7 +23,14 @@
 
 using namespace std;
 
+typedef AbstractAlgorithm *maker_t(const AbstractSensor& sensor, map<string, int>& config);
+
+// our global factory for making shapes 
+map<string, maker_t *, less<string> > factory;
+
 House* create_house_hard_coded();
+
+
 // returns the sensor's information of a position in the current house
 // Assumption: m_matrix[x][y] != 'W'
 SensorInformation Sensor::my_sense(const pair<int, int>& position) const {
@@ -280,10 +292,13 @@ void FilesLister::refresh() {
 		closedir(dir);
 	}
 	else {
+		PRINT_USAGE;
 		return;
 	}
 	sort(this->filesList_.begin(), this->filesList_.end());
 }
+
+
 
 void FilesListerWithSuffix::filterFiles() {
 	vector<string> temp = this->filesList_;
@@ -321,7 +336,6 @@ string FileParser::get_file_name(const string& full_path){
 	return string(find_if(full_path.rbegin(), full_path.rend(),
 		[](const char c){return c == '/'; }).base(), full_path.end());
 }
-
 
 // splits a string according to a delimiter. (from recitation)
 vector<string> FileParser::split(const string &s, char delim) {
@@ -561,9 +575,63 @@ int Main::fix_house_matrix(string *matrix, int rows, int cols){
 // load .so files that represent algorithms
 // creates vector of algorithms (one of each type), and vector of sensors (one for every algorithm)
 tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> Main::get_algorithms_and_sensors(string path, map<string, int>& config){
-	//srand(time(NULL));
+	
+	FileParser fp;
+	AlgorithmsLister al(path);
 
-	// creating sensor array (one for each algorithm)
+	vector<AbstractAlgorithm*> algorithm_arr; // deleted in the end of main()
+	vector<AbstractAlgorithm*> algorithm_empty;
+	vector<Sensor*> sensor_arr; // deleted in the end of main()
+	vector<Sensor*> sensor_empty;
+
+	// getting the full path
+	vector<string> result = al.getFilesList();
+	if (result.empty()){
+		PRINT_USAGE;
+		return make_tuple(algorithm_empty, sensor_empty);
+	}
+
+	// sort result vector according to file name
+	sort(result.begin(), result.end(), [&fp](const string s1, const string s2){ return fp.get_file_name(s1).compare(fp.get_file_name(s2)) < 0; });
+
+	int num_of_algorithms = result.size();
+
+	for (int i = 0; i < num_of_algorithms; i++)
+	{
+		string tmp(fp.get_file_name(result[i]));
+		stringstream ss;
+		ss << "./" << tmp;
+		string name(ss.str());
+		void* dlib = dlopen(name.c_str(), RTLD_NOW);
+		if (dlib == NULL){
+			error_list.push_back(tmp + ": file cannot be loaded or is not a valid .so");
+			continue;
+		}
+		string algo_name(tmp, 0, tmp.length() - 3);
+
+		auto itr = factory.find(algo_name);
+		if (itr == factory.end()){
+			error_list.push_back(tmp + ": valid .so but no algorithm was registered after loading it");
+			dlclose(dlib);
+			continue;
+		}
+		dl_arr.push_back(dlib);
+		Sensor* sensor = new Sensor(); // will be deleted in the algorithm destructor
+		algorithm_names.push_back(algo_name);
+		algorithm_arr.push_back(factory[algo_name](*sensor, config)); // will be deleted in the end of main
+		sensor_arr.push_back(sensor);
+	}
+
+	if (algorithm_arr.empty()){
+		cout << "All algorithm files in target folder '" << path << "' cannot be opened or are invalid:" << endl;
+		print_errors(error_list);
+		return make_tuple(algorithm_empty, sensor_empty);
+	}
+
+	return make_tuple(algorithm_arr, sensor_arr);
+
+	/*
+	// for WINDOWS debug
 	vector<Sensor*> sensor_arr;
 	for (int i = 0; i < 3; i++){
 		sensor_arr.push_back(new Sensor());
@@ -577,6 +645,7 @@ tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> Main::get_algorithms_and_sens
 	algorithm_names.push_back("_316602689_B");
 	algorithm_names.push_back("_316602689_C");
 	return make_tuple(algorithm_arr, sensor_arr);
+	*/
 }
 
 // parse the command line arguments
@@ -838,6 +907,11 @@ void Main::deleting_memory(vector<Simulator*> sim_arr, vector<House*>& house_arr
 	for (int i = 0; i < num_of_algorithms; ++i){
 		delete algorithm_arr[i];
 	}
+	
+	int length = dl_arr.size();
+	for (int i = 0; i < length; i++){
+		dlclose(dl_arr[i]); // close all dynamic links we opened
+	}
 
 	// delete sensor array pointer only - all sensor are being deleted in algorithm destructor
 	//for (int i = 0; i < num_of_algorithms; i++)
@@ -915,169 +989,6 @@ int main(int argc, char* argv[])
 	main.deleting_memory(simulator_arr, house_arr, algorithm_arr, sensor_arr, num_of_houses, num_of_algorithms);
 	
 	return 0;
-}
-
-
-// implenentionn if the three algorithms for ex2 - temporary located here
-//enum class Direction { East, West, South, North, Stay
-
-// step is called by the simulation for each time unit
-Direction _316602689_A::step() {
-	if (m_about_to_finish_flag){		
-		if (m_path_stack.empty()){
-			return Direction::Stay;
-		}
-		Direction d = m_path_stack.top();
-		m_path_stack.pop();
-		return d;
-	}
-	else { // not in about to finish
-		SensorInformation s_i = m_sensor->sense();
-		if (s_i.dirtLevel > 0){// current position still dirty
-			return Direction::Stay;
-		}
-		else{// current position is clean
-			// go to the following direction, in case there isn't a wall there by this order of prefernce: East, West, South, North
-			for (int i = 0; i < 4; i++)
-			{
-				if (!s_i.isWall[i]){
-					// push to stack the return step
-					switch ((Direction)i)
-					{
-					case Direction::North:{
-						m_path_stack.push(Direction::South);
-						break;
-						}
-					case Direction::South:{
-						m_path_stack.push(Direction::North);
-						break;
-					}
-					case Direction::East:{
-						m_path_stack.push(Direction::West);
-						break;
-					}
-					case Direction::West:{
-						m_path_stack.push(Direction::East);
-						break;
-					}
-					default:
-						m_path_stack.push(Direction::Stay); // should not get here
-						break;
-					}
-
-					return (Direction)i;
-				}// end if
-			}
-			return Direction::Stay;//never should get here
-		}
-	}
-	
-}
-
-// step is called by the simulation for each time unit
-Direction _316602689_B::step() {
-	if (m_about_to_finish_flag){
-		if (m_path_stack.empty()){
-			return Direction::Stay;
-		}
-		Direction d = m_path_stack.top();
-		m_path_stack.pop();
-		return d;
-	}
-	else { // not in about to finish
-		SensorInformation s_i = m_sensor->sense();
-		if (s_i.dirtLevel > 0){// current position still dirty
-			return Direction::Stay;
-		}
-		else{// current position is clean
-			// go to the following direction, in case there isn't a wall there by this order of prefernce: East, West, South, North
-			for (int i = 1; i < 5; i++)
-			{
-				if (!s_i.isWall[i % 4]){
-					// push to stack the return step
-					switch ((Direction)i)
-					{
-					case Direction::North:{
-						m_path_stack.push(Direction::South);
-						break;
-					}
-					case Direction::South:{
-						m_path_stack.push(Direction::North);
-						break;
-					}
-					case Direction::East:{
-						m_path_stack.push(Direction::West);
-						break;
-					}
-					case Direction::West:{
-						m_path_stack.push(Direction::East);
-						break;
-					}
-					default:
-						m_path_stack.push(Direction::Stay); // should not get here
-						break;
-					}
-
-					return (Direction)i;
-				}// end if
-			}
-			return Direction::Stay;//never should get here
-		}
-	}
-
-}
-
-// step is called by the simulation for each time unit
-Direction _316602689_C::step() {
-	if (m_about_to_finish_flag){
-		if (m_path_stack.empty()){
-			return Direction::Stay;
-		}
-		Direction d = m_path_stack.top();
-		m_path_stack.pop();
-		return d;
-	}
-	else { // not in about to finish
-		SensorInformation s_i = m_sensor->sense();
-		if (s_i.dirtLevel > 0){// current position still dirty
-			return Direction::Stay;
-		}
-		else{// current position is clean
-			// go to the following direction, in case there isn't a wall there by this order of prefernce: East, West, South, North
-			for (int i = 2; i < 6; i++)
-			{
-				if (!s_i.isWall[i % 4]){
-					// push to stack the return step
-					switch ((Direction)i)
-					{
-					case Direction::North:{
-						m_path_stack.push(Direction::South);
-						break;
-					}
-					case Direction::South:{
-						m_path_stack.push(Direction::North);
-						break;
-					}
-					case Direction::East:{
-						m_path_stack.push(Direction::West);
-						break;
-					}
-					case Direction::West:{
-						m_path_stack.push(Direction::East);
-						break;
-					}
-					default:
-						m_path_stack.push(Direction::Stay); // should not get here
-						break;
-					}
-
-					return (Direction)i;
-				}// end if
-			}
-			return Direction::Stay;//never should get here
-		}
-	}
-
 }
 
 
