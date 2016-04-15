@@ -9,13 +9,22 @@ using namespace std;
 
 typedef AbstractAlgorithm *maker_t();
 
-// our global factory for making shapes 
+// global factory for making shapes 
 extern map<string, maker_t *, less<string> > factory;
 
+
+/**
+* _316602689_C class. A determenistic algorithm,
+* that activate  by this order of prefernce:  South, North, 
+* East and West,(if possible). Maintains it's path back
+* to docking station, to be used when 'about_to_finish'
+* flag turns on.
+**/
 class _316602689_C : public AbstractAlgorithm{
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
 	stack<Direction> m_path_stack; // current house path stack
+	pair<int, int> m_relative_docking_location;
 	bool m_about_to_finish_flag;
 
 public:
@@ -24,19 +33,20 @@ public:
 	}
 
 	~_316602689_C() {
-		//delete m_sensor;
 	}
 
 	_316602689_C(const _316602689_C&) = delete;
 
 	_316602689_C& operator=(const _316602689_C&) = delete;
 
-	// setSensor is called once when the Algorithm is initialized
+	// setSensor is called once(for each house) when the Algorithm is initialized
 	virtual void setSensor(const AbstractSensor& sensor) {
 		m_sensor = &sensor;
+		m_relative_docking_location = pair<int, int>(0, 0);
+		m_path_stack.empty();
 	}
 
-	// setConfiguration is called once when the Algorithm is initialized - see below 
+	// setConfiguration is called once(for each house) when the Algorithm is initialized - see below 
 	virtual void setConfiguration(map<string, int> config){
 		m_config = config;
 	}

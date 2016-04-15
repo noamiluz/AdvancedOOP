@@ -7,6 +7,12 @@ using namespace std;
 #include "AbstractSensor.h"
 #include "Direction.h"
 
+/**
+* AbstractAlgorithm is a pure virtul class. Represents 
+* an algorithm that contains an information about the configuration,
+* and is using only a sensor(AbstractSensor) in order
+* to decide on the next step.
+**/
 class AbstractAlgorithm
 {
 public:

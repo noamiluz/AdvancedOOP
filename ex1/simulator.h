@@ -1,4 +1,6 @@
 /* nadavkareen 316602689; noamiluz 201307436 */
+#ifndef _SIMULATOR_H 
+#define _SIMULATOR_H 
 
 #include <stdio.h>
 #include <iostream>
@@ -9,9 +11,20 @@
 #include "Direction.h"
 #include "SensorInformation.h"
 
+#define PRINT_USAGE cout << "Usage: simulator [-config <config path>] [-house_path <house path>] [-algorithm_path <algorithm path>]" << endl
 using namespace std;
+typedef AbstractAlgorithm *maker_t();
+// our global factory for making algorithms 
+map<string, maker_t *, less<string> > factory;
 
 
+/**
+* House class. Represents a given house,
+* containng a short name, a valid max steps number
+* that a robot can execute on this house.
+* In addition, cantains the house repressentaion(by a matrix), 
+* it's size, it's docking position and the amount of dirt in it.
+**/
 class House{
 	const string m_short_name;
 	const int m_max_steps;
@@ -19,13 +32,14 @@ class House{
 	const int m_cols;
 	const pair<int, int> m_docking_station;
 	string* m_house_matrix;
-	const int m_sum_dirt; // sum of the dirt in the house
+	const int m_sum_dirt; 
 	bool m_flag; // true iff the aboutToFinish was called for this house
 
 	// Returns the sum of all the dust in the house. <private method, called once by the constructor>
 	int count_dirt() const;
 
 public:
+
 	House(const string& short_name, const int& max_steps, const int& rows, const int& cols,
 		const pair<int, int>& docking_station, string* house_matrix) :
 		m_short_name(short_name), m_max_steps(max_steps), m_rows(rows), m_cols(cols),
@@ -74,7 +88,13 @@ public:
 	}
 };
 
-
+/**
+* Sensor class. Represents a sensor,
+* that contains an House instance,
+* and the current location of the sensor in
+* this house. His main method, sense() returns 
+* a local view of the house member.
+**/
 class Sensor : public AbstractSensor {
 	House* m_house;
 	pair<int, int> m_curr_location;
@@ -108,57 +128,21 @@ public:
 	SensorInformation my_sense(const pair<int, int>& position) const;
 };
 
-
-class OurAlgorithm : public AbstractAlgorithm{
-	const AbstractSensor* m_sensor;
-	map<string, int> m_config; // configuration properties
-
-public:
-
-	OurAlgorithm(const AbstractSensor& sensor, map<string, int>& config) {
-		setSensor(sensor);
-		setConfiguration(config);
-	}
-
-	~OurAlgorithm() {
-		delete m_sensor;
-	}
-
-	// setSensor is called once when the Algorithm is initialized
-	virtual void setSensor(const AbstractSensor& sensor) {
-		m_sensor = const_cast<AbstractSensor*>(&sensor);
-	}
-
-	// setConfiguration is called once when the Algorithm is initialized - see below 
-	virtual void setConfiguration(map<string, int> config){
-		m_config = config;
-	}
-
-	// step is called by the simulation for each time unit
-	virtual Direction step();
-
-	// this method is called by the simulation either when there is a winner or 
-	// when steps == MaxSteps - MaxStepsAfterWinner 
-	// parameter stepsTillFinishing == MaxStepsAfterWinner 
-	virtual void aboutToFinish(int stepsTillFinishing){
-
-	}
-
-	const AbstractSensor* get_sensor(){
-		return m_sensor;
-	}
-};
-
-
+/**
+* Robot class. Represents a robot,
+* that cleans a given house according to a specific algorithm.
+* Contains an House instance, it's current battary level and location,
+* it's number of steps and position in competition and the
+* amount of dirt collected.
+**/
 class Robot{
-	House* m_house; // the house 
-	int m_curr_battary_level; // the current battary level of the robot
-
-	pair<int, int> m_curr_location;// curr location of the robot
+	House* m_house;  
+	int m_curr_battary_level; 
+	pair<int, int> m_curr_location;
 	bool m_is_active; // is the robot currently active in the simulation
-	int m_this_num_of_steps; // how much steps this robot has done during the simulation (for the score formula)
-	int m_dirt_collected; // how much dirt collected during the simulation of this robot
-	int m_position_in_competition; // the position of this robot in the competition. could be 1,2,3,4 or 10.
+	int m_this_num_of_steps; // for the score formula
+	int m_dirt_collected;
+	int m_position_in_competition; // can be 1,2,3,4 or 10.
 	bool m_is_valid; // false iff the robot got stuck in a wall (bad behavior)
 
 public:
@@ -245,12 +229,16 @@ public:
 };
 
 
-
+/**
+* Simulator class. Represents a simulation
+* that simulate an house cleaning by a few algorithms,
+* and score them according to their performance. 
+**/
 class Simulator{
 
 	map<string, int> m_config; // configuration properties
 
-	int m_steps; // num of steps the simulator did
+	int m_steps; 
 	vector<Robot*> m_robot_arr; // vectors of Robots. one for each algorithm.
 	vector<AbstractAlgorithm*> m_algorithm_arr;
 	vector<Sensor*> m_sensor_arr;
@@ -338,6 +326,11 @@ public:
 	}
 };
 
+
+/**
+* FileParser class. Contains a proccecing, parsing
+* and editing files names.
+**/
 class FileParser {
 
 public:
@@ -360,6 +353,13 @@ public:
 	void processLine(const string& line, map<string, int> &config);
 };
 
+
+/**
+* Main class. Contains functions that opens and loads
+* files(config.ini, *.house, *.so), and check their validity.
+* Also contains the command line proccesing function and the 
+* output functions(printing scores and errors).
+**/
 class Main {
 
 	vector<string> error_list; // error list to be printed at the end
@@ -387,7 +387,7 @@ public:
 	int fix_house_matrix(string *matrix, int rows, int cols);
 
 	// load .so files that represent algorithms
-	// creates vector of algorithms (one of each type), and vector of sensors (one for every algorithm)
+	// creates vector of algorithms (one of each type), and vector of sensors (one for each algorithm)
 	tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> get_algorithms_and_sensors(string path, map<string, int>& config);
 
 	// parse the command line arguments
@@ -415,6 +415,10 @@ public:
 		int num_of_houses, int num_of_algorithms);
 };
 
+
+/**
+* FilesLister class. An object contains a vector of files names.
+**/
 class FilesLister {
 
 protected:
@@ -443,6 +447,11 @@ public:
 	}
 };
 
+
+/**
+* FilesListerWithSuffix class. An object contains a vector of files names,
+* that ends with a given 'suffix'.
+**/
 class FilesListerWithSuffix : public FilesLister {
 protected:
 	void filterFiles();
@@ -466,17 +475,30 @@ public:
 	}
 };
 
+/**
+* HousesLister class. An object contains a vector of houses names,
+* that ends with a '.house'.
+**/
 class HousesLister : public FilesListerWithSuffix {
 public:
 	HousesLister(const string& basePath) : FilesListerWithSuffix(basePath, ".house"){}
 };
 
+/**
+* AlgorithmsLister class. An object contains a vector of algorithms names,
+* that ends with a '.so'.
+**/
 class AlgorithmsLister : public FilesListerWithSuffix {
 public:
 	AlgorithmsLister(const string& basePath) : FilesListerWithSuffix(basePath, ".so"){}
 };
 
+/**
+* ConfigLister class. An object contains a 'config.ini' file.
+**/
 class ConfigLister : public FilesListerWithSuffix {
 public:
 	ConfigLister(const string& basePath) : FilesListerWithSuffix(basePath, "config.ini"){}
 };
+
+#endif // _SIMULATOR_H 
