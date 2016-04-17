@@ -12,7 +12,9 @@
 #include "SensorInformation.h"
 
 #define PRINT_USAGE cout << "Usage: simulator [-config <config path>] [-house_path <house path>] [-algorithm_path <algorithm path>]" << endl
+
 using namespace std;
+
 typedef AbstractAlgorithm *maker_t();
 // our global factory for making algorithms 
 map<string, maker_t *, less<string> > factory;
@@ -411,7 +413,7 @@ public:
 	void print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matrix);
 
 	// freeing all the memory left to free in the program
-	void deleting_memory(vector<Simulator*> sim_arr, vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
+	void deleting_memory(vector<Simulator*>& sim_arr, vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
 		int num_of_houses, int num_of_algorithms);
 };
 

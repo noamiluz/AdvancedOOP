@@ -9,7 +9,7 @@ using namespace std;
 
 typedef AbstractAlgorithm *maker_t();
 
-// global factory for making shapes 
+// global factory for making algorithms 
 extern map<string, maker_t *, less<string> > factory;
 
 
@@ -43,7 +43,8 @@ public:
 	virtual void setSensor(const AbstractSensor& sensor) {
 		m_sensor = &sensor;
 		m_relative_docking_location = pair<int, int>(0, 0);
-		m_path_stack.empty();
+		stack<Direction> s; // an empty stack
+		m_path_stack.swap(s); // clear the m_path_stack
 	}
 
 	// setConfiguration is called once(for each house) when the Algorithm is initialized - see below 

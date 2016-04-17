@@ -12,8 +12,11 @@
 #include <iomanip>
 #include <limits.h>
 
-#include <dlfcn.h> 
-#include <dirent.h>
+#ifdef __gnu_linux__
+	#include <dlfcn.h> 
+	#include <dirent.h>
+#endif
+
 #include "simulator.h"
 
 /**
@@ -188,7 +191,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 			cur_robot->set_valid(false);
 			continue;
 		}
-
+		cout << cur_robot->get_house()->get_house_short_name() << ": " << next_loc.first << "," << next_loc.second << endl;
 		// if the current location is a docking station, increment the curr_battery_level by RechargeRate.
 		// if the battery is full do not increment.
 		if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] == 'D'){
@@ -269,6 +272,7 @@ void Simulator::finish_simulation(){
 	
 }
 
+#ifdef __gnu_linux__
 /**
 * Function that updates the files list vector,
 * with the full paths of the files.
@@ -288,6 +292,7 @@ void FilesLister::refresh() {
 	}
 	sort(this->filesList_.begin(), this->filesList_.end());
 }
+#endif
 
 /**
 * Function that saves the files name who
@@ -593,15 +598,18 @@ int Main::fix_house_matrix(string *matrix, int rows, int cols){
 * of sensors (one for each algorithm).
 **/
 tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> Main::get_algorithms_and_sensors(string path, map<string, int>& config){
-	
-	FileParser fp;
-	AlgorithmsLister al(path);
 
 	vector<AbstractAlgorithm*> algorithm_arr; // deleted in the end of main()
 	vector<AbstractAlgorithm*> algorithm_empty;
 	vector<Sensor*> sensor_arr; // deleted in the end of main()
 	vector<Sensor*> sensor_empty;
+	vector<string> tmp_error_list;
+	FileParser fp;
+	
+#ifdef __gnu_linux__
 
+	AlgorithmsLister al(path);
+		
 	// getting the full path
 	vector<string> result = al.getFilesList();
 	if (result.empty()){
@@ -617,19 +625,16 @@ tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> Main::get_algorithms_and_sens
 	for (int i = 0; i < num_of_algorithms; i++)
 	{
 		string tmp(fp.get_file_name(result[i]));
-		stringstream ss;
-		ss << "./" << tmp;
-		string name(ss.str());
-		void* dlib = dlopen(name.c_str(), RTLD_NOW);
+		void* dlib = dlopen(result[i].c_str(), RTLD_NOW);
 		if (dlib == NULL){
-			error_list.push_back(tmp + ": file cannot be loaded or is not a valid .so");
+			tmp_error_list.push_back(tmp + ": file cannot be loaded or is not a valid .so");
 			continue;
 		}
 		string algo_name(tmp, 0, tmp.length() - 3);
 
 		auto itr = factory.find(algo_name);
 		if (itr == factory.end()){
-			error_list.push_back(tmp + ": valid .so but no algorithm was registered after loading it");
+			tmp_error_list.push_back(tmp + ": valid .so but no algorithm was registered after loading it");
 			dlclose(dlib);
 			continue;
 		}
@@ -646,12 +651,21 @@ tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> Main::get_algorithms_and_sens
 
 	if (algorithm_arr.empty()){
 		cout << "All algorithm files in target folder '" << path << "' cannot be opened or are invalid:" << endl;
-		print_errors(error_list);
+		print_errors(tmp_error_list);
 		return make_tuple(algorithm_empty, sensor_empty);
 	}
 
+	int tmp_length = tmp_error_list.size();
+	for (int i = 0; i < tmp_length; i++){
+		error_list.push_back(tmp_error_list[i]);
+	}
+
+#endif
+
 	return make_tuple(algorithm_arr, sensor_arr);
 }
+
+
 
 /**
 * Function that parse the command line arguments,
@@ -667,59 +681,40 @@ tuple<string, string, string> Main::command_line_arguments(int argc, char* argv[
 			config_index = i;
 			if (i + 1 < argc && strcmp(argv[i + 1], "-config") && strcmp(argv[i + 1], "-house_path") && strcmp(argv[i + 1], "-algorithm_path")){ // make sure that there is a path
 				config_path = argv[i + 1];
-				i += 2;
 			}
 			else {
-				if (i + 1 >= argc || (i + 1 < argc && (!strcmp(argv[i + 1], "-house_path") || !strcmp(argv[i + 1], "-algorithm_path")))){
-					config_path = "./";
-					i++;
-				}
-				else {
-					PRINT_USAGE;
-					return make_tuple("","","");
-				}
+				PRINT_USAGE;
+				return make_tuple("", "", "");
 			}
+			i += 2;
 			continue;
 		}
 		if (!strcmp(argv[i], "-house_path") && house_index == -1){ // if at the current there is '-house_path' and its the first time
 			house_index = i;
 			if (i + 1 < argc && strcmp(argv[i + 1], "-config") && strcmp(argv[i + 1], "-house_path") && strcmp(argv[i + 1], "-algorithm_path")){ // make sure that there is a path
 				house_path = argv[i + 1];
-				i += 2;
 			}
 			else {
-				if (i + 1 >= argc || (i + 1 < argc && (!strcmp(argv[i + 1], "-config") || !strcmp(argv[i + 1], "-algorithm_path")))){
-					house_path = "./";
-					i++;
-				}
-				else {
-					PRINT_USAGE;
-					return make_tuple("", "", "");
-				}
+				PRINT_USAGE;
+				return make_tuple("", "", "");
 			}
+			i += 2;
 			continue;
 		}
 		if (!strcmp(argv[i], "-algorithm_path") && algorithm_index == -1){ // if at the current there is '-algorithm_path' and its the first time
 			algorithm_index = i;
 			if (i + 1 < argc && strcmp(argv[i + 1], "-config") && strcmp(argv[i + 1], "-house_path") && strcmp(argv[i + 1], "-algorithm_path")){ // make sure that there is a path
 				algorithm_path = argv[i + 1];
-				i += 2;
 			}
 			else {
-				if (i + 1 >= argc || (i + 1 < argc && (!strcmp(argv[i + 1], "-house_path") || !strcmp(argv[i + 1], "-config")))){
-					algorithm_path = "./";
-					i++;
-				}
-				else {
-					PRINT_USAGE;
-					return make_tuple("", "", "");
-				}
+				PRINT_USAGE;
+				return make_tuple("", "", "");
 			}
+			i += 2;
 			continue;
 		}
 		else{
-			PRINT_USAGE;
-			return make_tuple("", "", "");
+			i++;
 		}
 	}
 
@@ -761,7 +756,7 @@ tuple<string, string, string> Main::command_line_arguments(int argc, char* argv[
 * Function that simulate the simulator (called once for each house).
 **/
 void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms){
-	bool winner = false, about_to_finish = false;
+	bool winner = false, about_to_finish = false, called_about_to_finish = false;
 	int num_steps_after_winning = 0;
 	int rank_in_competition = 1;
 	
@@ -777,12 +772,14 @@ void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses,
 		if (rank_in_competition > 1){ // if there is a winner, start counting
 			num_steps_after_winning++;
 		}
-		if (!winner && rank_in_competition > 1 && sim.get_steps() <= sim.get_max_steps() - config["MaxStepsAfterWinner"]) { // the first robot has finished
+		if (!winner && rank_in_competition > 1 && !called_about_to_finish) { // the first robot has finished and abotToFinish was never called
 			winner = true;
 			about_to_finish = true;
+			called_about_to_finish = true;
 		}
-		if (rank_in_competition == 1 && sim.get_steps() == sim.get_max_steps() - config["MaxStepsAfterWinner"]){ // if steps == MaxSteps - MaxStepsAfterWinner
+		if (rank_in_competition == 1 && sim.get_steps() == sim.get_max_steps() - config["MaxStepsAfterWinner"] && !called_about_to_finish){ // if steps == MaxSteps - MaxStepsAfterWinner, and aboutToFinish was never called, call it
 			about_to_finish = true;
+			called_about_to_finish = true;
 		}
 		rank_in_competition = sim.simulate_step(rank_in_competition, about_to_finish); // do a simulation step
 		about_to_finish = false;
@@ -826,6 +823,7 @@ void Main::score_simulation(vector<Simulator*>& sim_arr, map<string, int>& confi
 			score_matrix[j][i] = (*sim_arr[i]).calculate_score(cur_robot->get_position_in_competition(), (*sim_arr[i]).get_winner_num_steps(),
 				cur_robot->get_num_of_steps(), cur_robot->get_dirt_collected(), cur_robot->get_house()->get_sum_dirt_in_house(),
 				cur_robot->get_house()->get_house_matrix()[loc.first][loc.second] == 'D');
+			cout << (cur_robot->get_house()->get_house_matrix()[loc.first][loc.second] == 'D' ? "returned to D" : "didnt return to D") << endl;
 		}
 	}
 
@@ -916,7 +914,7 @@ void Main::print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matri
 /**
 * Function that frees all the memory left to free in the program.
 **/
-void Main::deleting_memory(vector<Simulator*> sim_arr, vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
+void Main::deleting_memory(vector<Simulator*>& sim_arr, vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
 	int num_of_houses, int num_of_algorithms){
 	// delete simulator array
 	for (int i = 0; i < num_of_houses; ++i){
@@ -933,11 +931,13 @@ void Main::deleting_memory(vector<Simulator*> sim_arr, vector<House*>& house_arr
 		delete algorithm_arr[i];
 	}
 	
+#ifdef __gnu_linux__
 	// close all dynamic links we opened
 	int length = dl_arr.size();
 	for (int i = 0; i < length; i++){
 		dlclose(dl_arr[i]); 
 	}
+#endif
 
 	// delete sensors array
 	for (int i = 0; i < num_of_algorithms; ++i){
@@ -976,6 +976,10 @@ int main(int argc, char* argv[])
 	vector<AbstractAlgorithm*> algorithm_arr = get<0>(algorithms_and_sensors); // getting algorithms arr
 	vector<Sensor*> sensor_arr = get<1>(algorithms_and_sensors);
 	if (algorithm_arr.empty() || sensor_arr.empty()){
+		int vec_length = house_arr.size();
+		for (int i = 0; i < vec_length; i++){
+			delete house_arr[i];
+		}
 		return 1;
 	}
 	
