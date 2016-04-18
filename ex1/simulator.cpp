@@ -76,29 +76,6 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 		const pair<int, int>& cur_loc = cur_robot->get_curr_location(); // get the current location of the robot
 		
 		
-		/////////////////////
-		cout << "loc: " << cur_loc.first << "," << cur_loc.second << endl;
-		cout << "batery level (real): " << cur_robot->get_curr_battary_level() << endl;
-		cout << cur_house->get_house_short_name() << endl;
-		cout << "Algorithm" << i << endl;
-		cout << "step #" << m_steps << endl;
-		for (int k = 0; k < cur_robot->get_house()->get_house_matrix_rows(); k++)
-		{
-			for (int l = 0; l < cur_robot->get_house()->get_house_matrix_cols(); l++)
-			{
-				if (cur_loc.first == k && cur_loc.second == l){
-					cout << "@";
-				}
-				else {
-					cout << cur_house->get_house_matrix()[k][l];
-				}
-			}
-			cout << endl;
-		}
-		cout << endl;
-		////////////////////////
-
-
 		switch (d){ // calculate the next location
 		case Direction::North:
 			next_loc = { cur_loc.first - 1, cur_loc.second };
@@ -370,7 +347,6 @@ vector<House*> Main::get_houses(string path) {
 				docking.second = index;
 			}
 		}
-		cout << "in get houses the docking is " << docking.first << "," << docking.second << endl;
 		house_names.push_back(fp.get_file_name(string(result[i], 0, result[i].length() - 6))); // push valid houses file name 
 		house_arr.push_back(new House(name, max_steps, r, c, docking, matrix)); // deleted in the end of main()
 	}
