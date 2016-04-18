@@ -86,6 +86,7 @@
     <ClInclude Include="AbstractSensor.h" />
     <ClInclude Include="Direction.h" />
     <ClInclude Include="FilesInfrastructure.h" />
+    <ClInclude Include="GenericAlgorithm.h" />
     <ClInclude Include="House.h" />
     <ClInclude Include="Robot.h" />
     <ClInclude Include="Sensor.h" />

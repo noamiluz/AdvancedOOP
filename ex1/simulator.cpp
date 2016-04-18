@@ -69,10 +69,35 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 			m_algorithm_arr[i]->aboutToFinish(m_config["MaxStepsAfterWinner"]);
 		}
 
+
 		Direction d = m_algorithm_arr[i]->step(); // ask the algorithm what direction to go
 		pair<int, int> next_loc;
 		House* cur_house = cur_robot->get_house(); // get the house of the current robot
 		const pair<int, int>& cur_loc = cur_robot->get_curr_location(); // get the current location of the robot
+		
+		
+		/////////////////////
+		cout << "loc: " << cur_loc.first << "," << cur_loc.second << endl;
+		cout << "batery level (real): " << cur_robot->get_curr_battary_level() << endl;
+		cout << cur_house->get_house_short_name() << endl;
+		cout << "Algorithm" << i << endl;
+		cout << "step #" << m_steps << endl;
+		for (int k = 0; k < cur_robot->get_house()->get_house_matrix_rows(); k++)
+		{
+			for (int l = 0; l < cur_robot->get_house()->get_house_matrix_cols(); l++)
+			{
+				if (cur_loc.first == k && cur_loc.second == l){
+					cout << "@";
+				}
+				else {
+					cout << cur_house->get_house_matrix()[k][l];
+				}
+			}
+			cout << endl;
+		}
+		cout << endl;
+		////////////////////////
+
 
 		switch (d){ // calculate the next location
 		case Direction::North:
@@ -104,13 +129,13 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 		// if the current location is a docking station, increment the curr_battery_level by RechargeRate.
 		// if the battery is full do not increment.
 		if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] == 'D'){
-			// if the current move was 'stay in docking station' do not decrement battery
+			
 			if (d == Direction::Stay){ // if the current move was 'stay in docking station' do not decrement battery
 				cur_robot->set_curr_battery_level(min(m_config["BatteryCapacity"], cur_robot->get_curr_battary_level() + m_config["BatteryRechargeRate"]));
 			}
 
 			else { // if the current move was to docking station decrement battery.
-				cur_robot->set_curr_battery_level(min(m_config["BatteryCapacity"], cur_robot->get_curr_battary_level() - m_config["BatteryConsumptionRate"]));
+				cur_robot->set_curr_battery_level(max(0, cur_robot->get_curr_battary_level() - m_config["BatteryConsumptionRate"]));
 			}
 
 			// if the robot has finished cleaning the house
@@ -127,7 +152,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 			}
 			continue;
 		}
-		// if the current move was  docking station, and the next one isn't docking station, charge the battary and do not decrement.
+		// if the current move was docking station, and the next one isn't docking station, charge the battary and do not decrement.
 		else if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] != 'D' && cur_house->get_house_matrix()[cur_loc.first][cur_loc.second] == 'D'){
 			cur_robot->set_curr_battery_level(min(m_config["BatteryCapacity"], cur_robot->get_curr_battary_level() + m_config["BatteryRechargeRate"]));
 		}
@@ -150,6 +175,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 
 		}
 
+		// erase !!!!!!!!!	
 	}
 
 	if (is_someone_finished){ // if there were robots who finished in this step increment the rank
@@ -344,6 +370,7 @@ vector<House*> Main::get_houses(string path) {
 				docking.second = index;
 			}
 		}
+		cout << "in get houses the docking is " << docking.first << "," << docking.second << endl;
 		house_names.push_back(fp.get_file_name(string(result[i], 0, result[i].length() - 6))); // push valid houses file name 
 		house_arr.push_back(new House(name, max_steps, r, c, docking, matrix)); // deleted in the end of main()
 	}
