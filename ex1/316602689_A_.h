@@ -1,9 +1,9 @@
+/* nadavkareen 316602689; noamiluz 201307436 */
 #ifndef __316602689_A_H 
 #define __316602689_A_H 
 
 #include <stdio.h>
 #include <stack>
-#include <iostream>
 #include "AbstractAlgorithm.h"
 
 using namespace std;
@@ -43,10 +43,8 @@ public:
 	virtual void setSensor(const AbstractSensor& sensor) {
 		m_sensor = &sensor;
 		m_relative_docking_location = pair<int,int>(0, 0);
-		cout << "before swap: " << (m_path_stack.empty() ? "empty" : "not empty") << endl;
 		stack<Direction> s; // an empty stack
 		m_path_stack.swap(s); // clear the m_path_stack
-		cout << "after swap: " << (m_path_stack.empty() ? "empty" : "not empty") << endl;
 	}
 
 	// setConfiguration is called once(for each house) when the Algorithm is initialized - see below 

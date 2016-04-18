@@ -85,6 +85,10 @@
     <ClInclude Include="AbstractAlgorithm.h" />
     <ClInclude Include="AbstractSensor.h" />
     <ClInclude Include="Direction.h" />
+    <ClInclude Include="FilesInfrastructure.h" />
+    <ClInclude Include="House.h" />
+    <ClInclude Include="Robot.h" />
+    <ClInclude Include="Sensor.h" />
     <ClInclude Include="SensorInformation.h" />
     <ClInclude Include="simulator.h" />
   </ItemGroup>
@@ -92,6 +96,9 @@
     <ClCompile Include="316602689_A_.cpp" />
     <ClCompile Include="316602689_B_.cpp" />
     <ClCompile Include="316602689_C_.cpp" />
+    <ClCompile Include="FilesInfrastructure.cpp" />
+    <ClCompile Include="House.cpp" />
+    <ClCompile Include="Sensor.cpp" />
     <ClCompile Include="simulator.cpp" />
   </ItemGroup>
   <ItemGroup>

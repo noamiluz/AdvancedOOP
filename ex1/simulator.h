@@ -4,231 +4,23 @@
 
 #include <stdio.h>
 #include <iostream>
-#include <stack>
 
 #include "AbstractAlgorithm.h"
 #include "AbstractSensor.h"
 #include "Direction.h"
 #include "SensorInformation.h"
-
-#define PRINT_USAGE cout << "Usage: simulator [-config <config path>] [-house_path <house path>] [-algorithm_path <algorithm path>]" << endl
+#include "Sensor.h"
+#include "House.h"
+#include "Robot.h"
+#include "FilesInfrastructure.h"
 
 using namespace std;
+
+#define PRINT_USAGE cout << "Usage: simulator [-config <config path>] [-house_path <house path>] [-algorithm_path <algorithm path>]" << endl
 
 typedef AbstractAlgorithm *maker_t();
 // our global factory for making algorithms 
 map<string, maker_t *, less<string> > factory;
-
-
-/**
-* House class. Represents a given house,
-* containng a short name, a valid max steps number
-* that a robot can execute on this house.
-* In addition, cantains the house repressentaion(by a matrix), 
-* it's size, it's docking position and the amount of dirt in it.
-**/
-class House{
-	const string m_short_name;
-	const int m_max_steps;
-	const int m_rows;
-	const int m_cols;
-	const pair<int, int> m_docking_station;
-	string* m_house_matrix;
-	const int m_sum_dirt; 
-	bool m_flag; // true iff the aboutToFinish was called for this house
-
-	// Returns the sum of all the dust in the house. <private method, called once by the constructor>
-	int count_dirt() const;
-
-public:
-
-	House(const string& short_name, const int& max_steps, const int& rows, const int& cols,
-		const pair<int, int>& docking_station, string* house_matrix) :
-		m_short_name(short_name), m_max_steps(max_steps), m_rows(rows), m_cols(cols),
-		m_docking_station(docking_station), m_house_matrix(house_matrix), m_sum_dirt(count_dirt()), m_flag(false) {}
-
-	~House();
-
-	House(const House& house);
-
-	House& operator=(const House& house) = delete;
-
-	string* get_house_matrix() const{
-		return m_house_matrix;
-	}
-
-	const int& get_house_matrix_rows() const{
-		return m_rows;
-	}
-
-	const int& get_house_matrix_cols() const{
-		return m_cols;
-	}
-
-	const pair<int, int>& get_house_docking_station() const{
-		return m_docking_station;
-	}
-
-	const string get_house_short_name() const {
-		return m_short_name;
-	}
-
-	const int get_max_steps() const{
-		return m_max_steps;
-	}
-
-	const int get_sum_dirt_in_house() const {
-		return m_sum_dirt;
-	}
-
-	bool get_flag(){
-		return m_flag;
-	}
-
-	void set_flag(bool b){
-		m_flag = b;
-	}
-};
-
-/**
-* Sensor class. Represents a sensor,
-* that contains an House instance,
-* and the current location of the sensor in
-* this house. His main method, sense() returns 
-* a local view of the house member.
-**/
-class Sensor : public AbstractSensor {
-	House* m_house;
-	pair<int, int> m_curr_location;
-
-public:
-
-	Sensor() : m_house(nullptr), m_curr_location(0,0){
-	}
-
-	~Sensor(){}
-
-	// returns the sensor's information of the current location of the robot
-	virtual SensorInformation sense() const;
-
-	House* get_house() const{
-		return m_house;
-	}
-
-	void set_house(House* house){
-		m_house = house;
-	}
-
-	const pair<int, int>& get_curr_location() const {
-		return m_curr_location;
-	}
-
-	void set_curr_location(pair<int, int>& location){
-		m_curr_location = location;
-	}
-
-	SensorInformation my_sense(const pair<int, int>& position) const;
-};
-
-/**
-* Robot class. Represents a robot,
-* that cleans a given house according to a specific algorithm.
-* Contains an House instance, it's current battary level and location,
-* it's number of steps and position in competition and the
-* amount of dirt collected.
-**/
-class Robot{
-	House* m_house;  
-	int m_curr_battary_level; 
-	pair<int, int> m_curr_location;
-	bool m_is_active; // is the robot currently active in the simulation
-	int m_this_num_of_steps; // for the score formula
-	int m_dirt_collected;
-	int m_position_in_competition; // can be 1,2,3,4 or 10.
-	bool m_is_valid; // false iff the robot got stuck in a wall (bad behavior)
-
-public:
-
-	Robot(int init_battary_level, House* house) :
-		m_curr_battary_level(init_battary_level), m_curr_location(house->get_house_docking_station()), m_is_active(true),
-		m_this_num_of_steps(0), m_dirt_collected(0), m_position_in_competition(0), m_is_valid(true) {
-		m_house = new House(*house);
-	}
-
-	~Robot(){
-		delete m_house;
-	}
-
-	Robot(const Robot& robot) = delete;
-
-	Robot& operator=(const Robot& other_robot) = delete;
-
-
-	House* get_house(){
-		return m_house;
-	}
-
-	const int& get_curr_battary_level() const{
-		return m_curr_battary_level;
-	}
-
-	const bool is_active() const {
-		return m_is_active;
-	}
-
-	void set_curr_battery_level(const int new_level){
-		m_curr_battary_level = new_level;
-	}
-
-
-	void set_active(bool active){
-		m_is_active = active;
-	}
-
-	void increment_num_of_steps(){
-		m_this_num_of_steps++;
-	}
-
-	void set_num_of_steps(int steps){
-		m_this_num_of_steps = steps;
-	}
-
-	void increment_dirt_collected(){
-		m_dirt_collected++;
-	}
-
-	const int get_num_of_steps() const {
-		return m_this_num_of_steps;
-	}
-
-	const int get_dirt_collected() const {
-		return m_dirt_collected;
-	}
-
-	const int get_position_in_competition() const {
-		return m_position_in_competition;
-	}
-
-	const bool is_valid() const{
-		return m_is_valid;
-	}
-
-	void set_position_in_competition(int position){
-		m_position_in_competition = position;
-	}
-
-	void set_valid(bool valid){
-		m_is_valid = valid;
-	}
-
-	pair<int, int>& get_curr_location(){
-		return m_curr_location;
-	}
-
-	void set_curr_location(pair<int, int>& location){
-		m_curr_location = location;
-	}
-};
 
 
 /**
@@ -330,33 +122,6 @@ public:
 
 
 /**
-* FileParser class. Contains a proccecing, parsing
-* and editing files names.
-**/
-class FileParser {
-
-public:
-
-	// returns vector of the full paths to all the files in the 'path_of_directory' directory which
-	// their names contains the suffix 'suffix' 
-	// path_of_directory could be relative or absolute (and with or without '/')
-	vector<string> get_file_paths(const string& path_of_directory, const string&& suffix);
-
-	// receive a full path to a file and returns its base name
-	string get_file_name(const string& full_path);
-
-	// splits a string according to a delimiter. (from recitation)
-	vector<string> split(const string &s, char delim);
-
-	// cleans a string from unwanted whitespaces. (from recitation)
-	string trim(string& str);
-
-	// given a line read from the configuration file, update the configuration map. (from recitation)
-	void processLine(const string& line, map<string, int> &config);
-};
-
-
-/**
 * Main class. Contains functions that opens and loads
 * files(config.ini, *.house, *.so), and check their validity.
 * Also contains the command line proccesing function and the 
@@ -415,92 +180,6 @@ public:
 	// freeing all the memory left to free in the program
 	void deleting_memory(vector<Simulator*>& sim_arr, vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
 		int num_of_houses, int num_of_algorithms);
-};
-
-
-/**
-* FilesLister class. An object contains a vector of files names.
-**/
-class FilesLister {
-
-protected:
-	vector<string> filesList_;
-	string basePath_;
-
-private:
-	static string concatenateAbsolutePath(const string& dirPath, const string& fileName)
-	{
-		if (dirPath.empty())
-			return fileName;
-		if (dirPath.back() == '/')
-			return dirPath + fileName;
-		return dirPath + "/" + fileName;
-	}
-
-public:
-	FilesLister(const string& basePath) : basePath_(basePath){
-		this->refresh();
-	}
-
-	virtual void refresh();
-
-	vector<string> getFilesList(){
-		return this->filesList_;
-	}
-};
-
-
-/**
-* FilesListerWithSuffix class. An object contains a vector of files names,
-* that ends with a given 'suffix'.
-**/
-class FilesListerWithSuffix : public FilesLister {
-protected:
-	void filterFiles();
-
-	static inline bool endsWith(std::string value, std::string ending){
-		if (ending.size() > value.size())
-			return false;
-		return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
-	}
-
-	string suffix_;
-
-public:
-	FilesListerWithSuffix(const string& basePath, const string& suffix) : FilesLister(basePath)	, suffix_(suffix){
-		this->filterFiles();
-	}
-
-	virtual void refresh() {
-		FilesLister::refresh();
-		this->filterFiles();
-	}
-};
-
-/**
-* HousesLister class. An object contains a vector of houses names,
-* that ends with a '.house'.
-**/
-class HousesLister : public FilesListerWithSuffix {
-public:
-	HousesLister(const string& basePath) : FilesListerWithSuffix(basePath, ".house"){}
-};
-
-/**
-* AlgorithmsLister class. An object contains a vector of algorithms names,
-* that ends with a '.so'.
-**/
-class AlgorithmsLister : public FilesListerWithSuffix {
-public:
-	AlgorithmsLister(const string& basePath) : FilesListerWithSuffix(basePath, ".so"){}
-};
-
-/**
-* ConfigLister class. An object contains a 'config.ini' file.
-**/
-class ConfigLister : public FilesListerWithSuffix {
-public:
-	ConfigLister(const string& basePath) : FilesListerWithSuffix(basePath, "config.ini"){}
 };
 
 #endif // _SIMULATOR_H 

@@ -19,96 +19,6 @@
 
 #include "simulator.h"
 
-/**
-* Function that returns the sensor's information of a
-* position in the current house.
-* This function assumes that m_matrix[x][y] != 'W'(i.e - current location != 'W')
-**/
-SensorInformation Sensor::my_sense(const pair<int, int>& position) const {
-	SensorInformation result;
-	int x = position.first;
-	int y = position.second;
-
-	if (x - 1 >= 0){
-		if (this->m_house->get_house_matrix()[x - 1][y] == 'W'){
-			result.isWall[(int)Direction::North] = true;
-		}
-		else {
-			result.isWall[(int)Direction::North] = false;
-		}
-	}
-	if (x + 1 < this->m_house->get_house_matrix_rows()){
-		if (this->m_house->get_house_matrix()[x + 1][y] == 'W'){
-			result.isWall[(int)Direction::South] = true;
-		}
-		else {
-			result.isWall[(int)Direction::South] = false;
-		}
-	}
-	if (y - 1 >= 0){
-		if (this->m_house->get_house_matrix()[x][y - 1] == 'W'){
-			result.isWall[(int)Direction::West] = true;
-		}
-		else {
-			result.isWall[(int)Direction::West] = false;
-		}
-	}
-	if (y + 1 < this->m_house->get_house_matrix_cols()){
-		if (this->m_house->get_house_matrix()[x][y + 1] == 'W'){
-			result.isWall[(int)Direction::East] = true;
-		}
-		else {
-			result.isWall[(int)Direction::East] = false;
-		}
-	}
-	result.dirtLevel = this->m_house->get_house_matrix()[x][y] == ' ' || this->m_house->get_house_matrix()[x][y] == 'D' ? 0 : this->m_house->get_house_matrix()[x][y] - '0';
-	return result;
-}
-
-/**
-* Function that calls to my_sense() function, in order
-* to get information of a position in the current house.
-**/
-SensorInformation Sensor::sense() const{
-	return my_sense(m_curr_location);
-}
-
-
-House::~House(){
-	delete[] m_house_matrix;
-}
-
-House::House(const House& house) :
-m_short_name(house.m_short_name), m_max_steps(house.m_max_steps), m_rows(house.m_rows), m_cols(house.m_cols),
-m_docking_station(house.m_docking_station), m_sum_dirt(house.m_sum_dirt){
-
-	m_house_matrix = new string[m_rows];
-	for (int i = 0; i < m_rows; i++){
-		m_house_matrix[i] = house.m_house_matrix[i];
-	}
-
-}
-
-/**
-* Function returns the amonut of dust currently in the house.
-**/
-int House::count_dirt() const{
-	int result = 0;
-	for (int i = 0; i < m_rows; i++)
-	{
-		if (m_house_matrix[i].empty()){
-			continue;
-		}
-		for (int j = 0; j < m_cols; j++)
-		{
-
-			if ((unsigned)j < m_house_matrix[i].length() && m_house_matrix[i][j] > 48 && m_house_matrix[i][j] < 58){ // in 1,...,9
-				result += (int)(m_house_matrix[i][j] - '0');
-			}
-		}
-	}
-	return result;
-}
 
 Simulator::~Simulator(){
 	// delete robots array
@@ -191,7 +101,6 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 			cur_robot->set_valid(false);
 			continue;
 		}
-		cout << cur_robot->get_house()->get_house_short_name() << ": " << next_loc.first << "," << next_loc.second << endl;
 		// if the current location is a docking station, increment the curr_battery_level by RechargeRate.
 		// if the battery is full do not increment.
 		if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] == 'D'){
@@ -272,107 +181,6 @@ void Simulator::finish_simulation(){
 	
 }
 
-#ifdef __gnu_linux__
-/**
-* Function that updates the files list vector,
-* with the full paths of the files.
-**/
-void FilesLister::refresh() {
-	DIR *dir;
-	struct dirent *ent;
-	this->filesList_.clear();
-	if ((dir = opendir(this->basePath_.c_str())) != NULL) {
-		while ((ent = readdir(dir)) != NULL) {
-			this->filesList_.push_back(concatenateAbsolutePath(this->basePath_, ent->d_name));
-		}
-		closedir(dir);
-	}
-	else {
-		return;
-	}
-	sort(this->filesList_.begin(), this->filesList_.end());
-}
-#endif
-
-/**
-* Function that saves the files name who
-* end with the given suffix 'suffix'.
-**/
-void FilesListerWithSuffix::filterFiles() {
-	vector<string> temp = this->filesList_;
-	this->filesList_.clear();
-	for (vector<string>::iterator itr = temp.begin(); itr != temp.end(); ++itr){
-		if (endsWith(*itr, this->suffix_))
-		{
-			this->filesList_.push_back(*itr);
-		}
-	}
-}
-
-/**
-* Function returns vector of the full paths to all the files in the 
-* 'path_of_directory' directory which their names contains the suffix 'suffix'. 
-* path_of_directory could be relative or absolute (and with or without '/').
-**/
-vector<string> FileParser::get_file_paths(const string& path_of_directory, const string&& suffix){
-	string str_command = "find " + path_of_directory + " -name \"" + suffix + "\" > ./\"out.txt\"";
-	const char * command = str_command.c_str();
-	system(command); // execute the command on linux. 
-	//will create a file out.txt in the current directory with the output of the command.
-	ifstream fin;
-	fin.open("./out.txt");
-	string line;
-	vector<string> paths; // deleted in the caller function
-	while (getline(fin, line)){
-		paths.push_back(line);
-	}
-	fin.close();
-	system("rm ./out.txt"); // delete the out.txt file
-	return paths;
-}
-
-/**
-* Function reciving  a full path to a file and returns its base name.
-**/
-string FileParser::get_file_name(const string& full_path){
-	return string(find_if(full_path.rbegin(), full_path.rend(),
-		[](const char c){return c == '/'; }).base(), full_path.end());
-}
-
-/**
-* Function that splits a string according to a delimiter. (from recitation)
-**/
-vector<string> FileParser::split(const string &s, char delim) {
-	vector<string> elems;
-	stringstream ss(s);
-	string item;
-	while (getline(ss, item, delim)) {
-		elems.push_back(item);
-	}
-	return elems;
-}
-
-/**
-* Function that cleans a string from unwanted whitespaces. (from recitation)
-**/
-string FileParser::trim(string& str) {
-	str.erase(0, str.find_first_not_of(' '));// prefixing spaces
-	str.erase(str.find_last_not_of(' ') + 1);// suffixing spaces
-	return str;
-}
-
-/**
-* Function that given a line read from the configuration file, update the configuration map. (from recitation)
-**/
-void FileParser::processLine(const string& line, map<string, int> &config)
-{
-	vector<string> tokens = split(line, '=');
-	if (tokens.size() != 2)
-	{
-		return;
-	}
-	config[trim(tokens[0])] = stoi(trim(tokens[1]));
-}
 
 
 /**
@@ -823,7 +631,6 @@ void Main::score_simulation(vector<Simulator*>& sim_arr, map<string, int>& confi
 			score_matrix[j][i] = (*sim_arr[i]).calculate_score(cur_robot->get_position_in_competition(), (*sim_arr[i]).get_winner_num_steps(),
 				cur_robot->get_num_of_steps(), cur_robot->get_dirt_collected(), cur_robot->get_house()->get_sum_dirt_in_house(),
 				cur_robot->get_house()->get_house_matrix()[loc.first][loc.second] == 'D');
-			cout << (cur_robot->get_house()->get_house_matrix()[loc.first][loc.second] == 'D' ? "returned to D" : "didnt return to D") << endl;
 		}
 	}
 
