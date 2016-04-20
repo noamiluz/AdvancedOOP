@@ -44,7 +44,7 @@ void Simulator::init_robot_arr(House* house) {
 * according to it's corresponding algorithm.
 * Returns cuurent rank in competition achieved.
 **/
-int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
+int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, string& message){
 	m_steps++; // increment the number of steps
 	Robot * cur_robot;
 	bool is_someone_finished = false;
@@ -101,6 +101,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish){
 			cur_robot->set_active(false);
 			m_not_active++;
 			cur_robot->set_valid(false);
+			message = i + "," + m_steps;
 			continue;
 		}
 		// if the current location is a docking station, increment the curr_battery_level by RechargeRate.
@@ -566,10 +567,12 @@ tuple<string, string, string> Main::command_line_arguments(int argc, char* argv[
 /**
 * Function that simulate the simulator (called once for each house).
 **/
-void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms){
+void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms, string& house_name){
+	FileParser fp;
 	bool winner = false, about_to_finish = false, called_about_to_finish = false;
 	int num_steps_after_winning = 0;
 	int rank_in_competition = 1;
+	string message("");
 	
 	// setSenor for all algorithms, in each new simulation (i.e - for each house)
 	for (int j = 0; j < num_of_algorithms; j++)
@@ -592,7 +595,13 @@ void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses,
 			about_to_finish = true;
 			called_about_to_finish = true;
 		}
-		rank_in_competition = sim.simulate_step(rank_in_competition, about_to_finish); // do a simulation step
+		rank_in_competition = sim.simulate_step(rank_in_competition, about_to_finish, message); // do a simulation step
+		if (message.compare("")){ // message != ""
+			auto splitted_message = fp.split(message, ',');
+			error_list.push_back("Algorithm " + algorithm_names[atoi(splitted_message[0].c_str())] +
+				" when running on House " + house_name + " went on a wall in step " + splitted_message[1]);
+			message = "";
+		}
 		about_to_finish = false;
 	}
 
@@ -804,7 +813,7 @@ int main(int argc, char* argv[])
 
 	// simulate the simulator for each house
 	for (int i = 0; i < num_of_houses; i++){
-		main.simulate(*simulator_arr[i], config, num_of_houses, num_of_algorithms);
+		main.simulate(*simulator_arr[i], config, num_of_houses, num_of_algorithms, main.get_house_names()[i]);
 	}
 	
 	

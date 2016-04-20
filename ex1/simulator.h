@@ -103,7 +103,7 @@ public:
 	// iterate over all houses, for each house runs a single steps of all the algorithms (in parallel).
 	// if the flag about_to_finish == true, the function aboutToFinish(int stepsTillFinishing) of each algorithm is called.
 	// rank_in_competition == 1,2,3,4 
-	int simulate_step(int& rank_in_competition, bool about_to_finish);
+	int simulate_step(int& rank_in_competition, bool about_to_finish, string& message);
 
 	// update all the robots that did not finish cleaning
 	void finish_simulation();
@@ -136,6 +136,10 @@ class Main {
 	
 public:
 
+	vector<string> get_house_names() const{
+		return house_names;
+	}
+
 	// prints error list
 	void print_errors(vector<string>& error_list);
 
@@ -162,7 +166,7 @@ public:
 	tuple<string, string, string> command_line_arguments(int argc, char* argv[]);
 
 	// simulate the simulator
-	void simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms);
+	void simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms, string& house_name);
 
 	// calculates the score matrix and prints it
 	void score_simulation(vector<Simulator*>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms);
