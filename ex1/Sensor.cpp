@@ -3,14 +3,15 @@
 
 
 /**
-* Function that returns the sensor's information of a
-* position in the current house.
-* This function assumes that m_matrix[x][y] != 'W'(i.e - current location != 'W')
+* Function that calls to my_sense() function, in order
+* to get information of a position in the current house.
+*
+* Assumption: house_matrix[m_cur_location.first][m_cur_location.second] != 'W'. 
 **/
-SensorInformation Sensor::my_sense(const pair<int, int>& position) const {
+SensorInformation Sensor::sense() const{
 	SensorInformation result;
-	int x = position.first;
-	int y = position.second;
+	int x = m_curr_location.first;
+	int y = m_curr_location.second;
 
 	if (x - 1 >= 0){
 		if (this->m_house->get_house_matrix()[x - 1][y] == 'W'){
@@ -46,12 +47,4 @@ SensorInformation Sensor::my_sense(const pair<int, int>& position) const {
 	}
 	result.dirtLevel = this->m_house->get_house_matrix()[x][y] == ' ' || this->m_house->get_house_matrix()[x][y] == 'D' ? 0 : this->m_house->get_house_matrix()[x][y] - '0';
 	return result;
-}
-
-/**
-* Function that calls to my_sense() function, in order
-* to get information of a position in the current house.
-**/
-SensorInformation Sensor::sense() const{
-	return my_sense(m_curr_location);
 }

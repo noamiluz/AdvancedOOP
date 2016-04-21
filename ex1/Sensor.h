@@ -48,8 +48,6 @@ public:
 	void set_curr_location(pair<int, int>& location){
 		m_curr_location = location;
 	}
-
-	SensorInformation my_sense(const pair<int, int>& position) const;
 };
 
 
