@@ -7,7 +7,7 @@
 * This function is calles by the simulation for
 * each time unit.
 **/
-Direction _316602689_B::step() {
+Direction _316602689_B::step(Direction prevStep) {
 	int size = m_path_stack.size();
 	if (m_battery_level == (size + 2) * m_config["BatteryConsumptionRate"]){
 		m_few_battery = true;

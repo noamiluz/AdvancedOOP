@@ -36,6 +36,7 @@ class Simulator{
 	vector<Robot*> m_robot_arr; // vectors of Robots. one for each algorithm.
 	vector<AbstractAlgorithm*> m_algorithm_arr;
 	vector<Sensor*> m_sensor_arr;
+	vector<Direction> m_prev_steps; // vector of prev steps, i.e m_prev_steps[i] is the last step simuletion done using m_algorithm_arr[i] 
 	const int m_num_of_algorithms;
 	const int m_max_steps; // the max steps of the house this robot cleans.
 	int m_winner_num_steps; // num of steps the winner has done during the simulation. (if there is no winner, remains MaxSteps)
@@ -46,6 +47,11 @@ public:
 		m_config(config), m_steps(0), m_algorithm_arr(algorithm_arr), m_sensor_arr(sensor_arr),
 		m_num_of_algorithms(algorithm_arr.size()), m_max_steps(house->get_max_steps()), m_winner_num_steps(house->get_max_steps()), m_not_active(0) {
 		init_robot_arr(house);
+		// init m_prev_steps with Direction::Stay
+		for (int i = 0; i < m_num_of_algorithms; i++)
+		{
+			m_prev_steps.push_back(Direction::Stay);
+		}
 	}
 
 	~Simulator();

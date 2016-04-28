@@ -1,0 +1,199 @@
+
+// ex2 #1 algorithm
+class _316602689_A : public AbstractAlgorithm{
+	const AbstractSensor* m_sensor;
+	map<string, int> m_config; // configuration properties
+
+	class Vertex {
+
+	public:
+		vector<Vertex*> neighbors;
+		Vertex* m_parent;
+		char m_color; // 'w' = white ; 'g' = grey; 'b' = black
+		int m_distance;
+
+		Vertex() : m_parent(nullptr), m_color('w'), m_distance(UINT_MAX) {}
+
+		~Vertex() {}
+	};
+
+	map<pair<int, int>, Vertex*> create_graph_from_matrix(string* matrix, int rows, int cols);
+
+	void delete_graph(map<pair<int, int>, Vertex*> graph);
+
+	Direction bfs(map<pair<int, int>, Vertex*> graph, pair<int, int> s, Vertex* t);
+
+
+public:
+
+	_316602689_A(const AbstractSensor& sensor, map<string, int>& config) {
+		setSensor(sensor);
+		setConfiguration(config);
+	}
+
+	~_316602689_A() {
+		delete m_sensor;
+	}
+
+	_316602689_A(const _316602689_A&) = delete;
+
+	_316602689_A& operator=(const _316602689_A&) = delete;
+
+	// setSensor is called once when the Algorithm is initialized
+	virtual void setSensor(const AbstractSensor& sensor) {
+		m_sensor = &sensor;
+	}
+
+	// setConfiguration is called once when the Algorithm is initialized - see below 
+	virtual void setConfiguration(map<string, int> config){
+		m_config = config;
+	}
+
+	// step is called by the simulation for each time unit
+	virtual Direction step();
+
+	// this method is called by the simulation either when there is a winner or 
+	// when steps == MaxSteps - MaxStepsAfterWinner 
+	// parameter stepsTillFinishing == MaxStepsAfterWinner 
+	virtual void aboutToFinish(int stepsTillFinishing){
+		((Sensor*)m_sensor)->get_house()->set_flag(true);
+	}
+
+};
+
+
+///// cpp- imp////
+
+// step is called by the simulation for each time unit
+Direction _316602689_A::step() {
+	Sensor* sensor = (Sensor*)m_sensor;
+	if (sensor->get_house()->get_flag()){
+		auto graph = create_graph_from_matrix(sensor->get_house()->get_house_matrix(), sensor->get_house()->get_house_matrix_rows(), sensor->get_house()->get_house_matrix_cols());
+		Direction d = bfs(graph, sensor->get_curr_location(), graph[sensor->get_house()->get_house_docking_station()]);
+		delete_graph(graph);
+		return d;
+	}
+	else {
+		SensorInformation s_i = m_sensor->sense();
+		if (s_i.dirtLevel > 0){// current position still dirty
+			return Direction::Stay;
+		}
+		else{// current position is clean
+			// go to the following direction, in case there isn't a wall there by this order of prefernce: East, West, South, North
+			for (int i = 0; i < 4; i++)
+			{
+				if (!s_i.isWall[i]) return (Direction)i;
+			}
+			return Direction::Stay;//never should get here
+		}
+	}
+	
+}
+
+map<pair<int, int>, _316602689_A::Vertex*> _316602689_A::create_graph_from_matrix(string* matrix, int rows, int cols){
+	map<pair<int, int>, _316602689_A::Vertex*> graph;
+	// creating the vertices
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{
+			if (matrix[i][j] != 'W'){
+				graph[{i, j}] = new _316602689_A::Vertex();
+			}
+		}
+	}
+
+	// updating the neighbors vector for each vertex
+	for (auto& pair : graph){
+		SensorInformation s_i = ((Sensor*)m_sensor)->my_sense(pair.first);
+		for (int i = 0; i < 4; i++)
+		{
+			if (s_i.isWall[i]){
+				continue;
+			}
+			switch ((Direction)i)
+			{
+			case Direction::North:
+				pair.second->neighbors.push_back(graph[{ pair.first.first - 1, pair.first.second }]);
+				break;
+			case Direction::South:
+				pair.second->neighbors.push_back(graph[{ pair.first.first + 1, pair.first.second }]);
+				break;
+			case Direction::East:
+				pair.second->neighbors.push_back(graph[{ pair.first.first, pair.first.second + 1}]);
+				break;
+			case Direction::West:
+				pair.second->neighbors.push_back(graph[{ pair.first.first, pair.first.second - 1}]);
+				break;
+			default:
+				break;
+			}
+		}		
+	}
+
+	return graph;
+}
+
+
+void _316602689_A::delete_graph(map<pair<int, int>, _316602689_A::Vertex*> graph){
+	for (auto& pair : graph){
+		delete pair.second;
+	}
+}
+
+Direction _316602689_A::bfs(map<pair<int, int>, _316602689_A::Vertex*> graph, pair<int, int> s, _316602689_A::Vertex* t){
+	// do the bfs
+	t->m_color = 'g';
+	t->m_distance = 0;
+	
+	Vertex *source = nullptr, *cur = nullptr;
+	queue<Vertex*> q;
+	q.push(t);
+	bool found_t = false;
+
+	while (!q.empty() && !found_t){
+		cur = q.front();
+		for (Vertex *v : cur->neighbors){
+			if (v->m_color == 'w'){
+				v->m_color = 'g';
+				v->m_distance = cur->m_distance + 1;
+				v->m_parent = cur;
+				q.push(v);
+				if (graph[s] == v){
+					found_t = true;
+					source = v;
+				}
+			}
+		}
+		q.pop();
+		cur->m_color = 'b';
+	}
+
+	// find location of parent
+	pair<int, int> parent_loc;
+	for (auto& pair : graph){
+		if (pair.second == source->m_parent){
+			parent_loc = pair.first;
+		}
+	}
+	
+	// calculate where is parent in relation to s
+	pair<int, int> d = { s.first - parent_loc.first, s.second - parent_loc.second };
+	if (d.first == 0){
+		if (d.second == 1){ // parent is left to s
+			return Direction::West;
+		}
+		else{ // parent is right to s
+			return Direction::East;
+		}
+	}
+	if (d.second == 0){
+		if (d.first == 1){ // parent is above s
+			return Direction::North;
+		}
+		else { // parent is below s
+			return Direction::South;
+		}
+	}
+	return Direction::Stay; // will never come to this 
+}

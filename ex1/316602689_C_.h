@@ -36,7 +36,7 @@ public:
 	_316602689_C& operator=(const _316602689_C&) = delete;
 
 	// step is called by the simulation for each time unit
-	virtual Direction step();
+	virtual Direction step(Direction prevStep);
 
 };
 

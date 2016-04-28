@@ -49,6 +49,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 	Robot * cur_robot;
 	bool is_someone_finished = false;
 	int num_of_winners_this_step = 0;
+
 	for (int i = 0; i < m_num_of_algorithms; i++)
 	{
 		cur_robot = m_robot_arr[i];
@@ -70,7 +71,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 		}
 
 
-		Direction d = m_algorithm_arr[i]->step(); // ask the algorithm what direction to go
+		Direction d = m_algorithm_arr[i]->step(m_prev_steps[i]); // ask the algorithm what direction to go
 		pair<int, int> next_loc;
 		House* cur_house = cur_robot->get_house(); // get the house of the current robot
 		const pair<int, int>& cur_loc = cur_robot->get_curr_location(); // get the current location of the robot
@@ -93,11 +94,15 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 			next_loc = cur_loc;
 			break;
 		}
+		// update m_prev_steps vector to contain the last preformed step
+		m_prev_steps[i] = d;
+
 		char ch = cur_house->get_house_matrix()[next_loc.first][next_loc.second]; // get the matrix item in the next location
-		cur_robot->set_curr_location(next_loc); // set the next location as the current one
 		cur_robot->increment_num_of_steps(); // increment the number of steps the robot has done
 
 		if (ch == 'W'){ // if there is a wall in the next location
+			cur_robot->set_curr_location(next_loc); // set the next location as the current one - MAYBE to delete
+
 			cur_robot->set_active(false);
 			m_not_active++;
 			cur_robot->set_valid(false);
@@ -106,6 +111,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 		}
 		// if the current location is a docking station, increment the curr_battery_level by RechargeRate.
 		// if the battery is full do not increment.
+
 		if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] == 'D'){
 			
 			if (d == Direction::Stay){ // if the current move was 'stay in docking station' do not decrement battery
@@ -128,12 +134,19 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 				m_not_active++;
 				num_of_winners_this_step++;
 			}
+			if (i == 0){
+				std::cout << "This is for algo " << i << ", the SIM battary level is : " << cur_robot->get_curr_battary_level() << endl;
+			}
+			cur_robot->set_curr_location(next_loc); // set the next location as the current one
 			continue;
 		}
 		// if the current move was docking station, and the next one isn't docking station, charge the battary and do not decrement.
+	
 		else if (cur_house->get_house_matrix()[next_loc.first][next_loc.second] != 'D' && cur_house->get_house_matrix()[cur_loc.first][cur_loc.second] == 'D'){
 			cur_robot->set_curr_battery_level(min(m_config["BatteryCapacity"], cur_robot->get_curr_battary_level() + m_config["BatteryRechargeRate"]));
+			cout << "here " << i << endl;
 		}
+
 		else { // if the current location is not on a docking station, decrement the curr_battery_level by ConsumptionRate.
 			// if the battery level is 0 do not decrement.
 			cur_robot->set_curr_battery_level(max(0, cur_robot->get_curr_battary_level() - m_config["BatteryConsumptionRate"]));
@@ -146,14 +159,18 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 		}
 
 		if (cur_robot->get_curr_battary_level() == 0){ // the robot got stuck with battery 0
+			cur_robot->set_curr_location(next_loc); // set the next location as the current one -  MAYBE TO DELETE
 			cur_robot->set_active(false);
 			m_not_active++;
 			cur_robot->set_position_in_competition(10);
 			continue;
 
 		}
-
+		cur_robot->set_curr_location(next_loc); // set the next location as the current one
 		// erase !!!!!!!!!	
+		if (i == 0){
+			std::cout << "This is for algo " << i << ", the SIM battary level is : " << cur_robot->get_curr_battary_level() << endl;
+		}
 	}
 
 	if (is_someone_finished){ // if there were robots who finished in this step increment the rank

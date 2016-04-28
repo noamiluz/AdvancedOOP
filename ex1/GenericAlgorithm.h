@@ -12,7 +12,7 @@ protected:
 	const AbstractSensor* m_sensor;
 	map<string, int> m_config; // configuration properties
 	stack<Direction> m_path_stack; // current house path stack
-	pair<int, int> m_relative_docking_location;
+	pair<int, int> m_relative_docking_location; // the PREV location(relative to docking location)
 	bool m_about_to_finish_flag;
 	bool m_few_battery;
 	int m_battery_level;
@@ -42,7 +42,7 @@ public:
 	}
 
 	// step is called by the simulation for each time unit
-	virtual Direction step() = 0;
+	virtual Direction step(Direction prevStep) = 0;
 
 	// this method is called by the simulation either when there is a winner or 
 	// when steps == MaxSteps - MaxStepsAfterWinner 
