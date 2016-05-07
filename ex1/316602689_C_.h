@@ -7,6 +7,7 @@
 #include <algorithm>
 #include "AbstractAlgorithm.h"
 #include "GenericAlgorithm.h"
+#include "AlgorithmRegistration.h"
 
 using namespace std;
 

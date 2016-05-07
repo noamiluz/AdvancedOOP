@@ -28,9 +28,10 @@ public:
 	string trim(string& str);
 
 	// given a line read from the configuration file, update the configuration map. (from recitation)
-	void processLine(const string& line, map<string, int> &config);
+	void processLine(const string& line, map<string, int> &config, string& temp_invalid, int& count_invalid);
 };
 
+//#ifdef __gnu_linux__
 /**
 * FilesLister class. An object contains a vector of files names.
 **/
@@ -78,9 +79,10 @@ protected:
 	}
 
 	string suffix_;
+	string _not_equal_to;
 
 public:
-	FilesListerWithSuffix(const string& basePath, const string& suffix) : FilesLister(basePath), suffix_(suffix){
+	FilesListerWithSuffix(const string& basePath, const string& suffix, const string& not_equal_to = "!") : FilesLister(basePath), suffix_(suffix), _not_equal_to(not_equal_to){
 		this->filterFiles();
 	}
 
@@ -107,7 +109,7 @@ public:
 **/
 class AlgorithmsLister : public FilesListerWithSuffix {
 public:
-	AlgorithmsLister(const string& basePath) : FilesListerWithSuffix(basePath, ".so"){}
+	AlgorithmsLister(const string& basePath) : FilesListerWithSuffix(basePath, ".so", "score_formula.so"){}
 };
 
 
@@ -119,5 +121,13 @@ public:
 	ConfigLister(const string& basePath) : FilesListerWithSuffix(basePath, "config.ini"){}
 };
 
+/**
+* ConfigLister class. An object contains a 'config.ini' file.
+**/
+class ScoreFormulaLister : public FilesListerWithSuffix {
+public:
+	ScoreFormulaLister(const string& basePath) : FilesListerWithSuffix(basePath, "score_formula.so"){}
+};
+//#endif
 
 #endif // __FILESINFRA_H

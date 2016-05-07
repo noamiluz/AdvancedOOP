@@ -4,6 +4,14 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <map>
+#include <vector>
+#include <algorithm>
+#include <string>
+#include <cstring>
+#include <fstream>
+#include <sstream>
+#include <functional>
 
 #include "AbstractAlgorithm.h"
 #include "AbstractSensor.h"
@@ -12,16 +20,8 @@
 #include "Sensor.h"
 #include "House.h"
 #include "Robot.h"
-#include "FilesInfrastructure.h"
 
 using namespace std;
-
-#define PRINT_USAGE cout << "Usage: simulator [-config <config path>] [-house_path <house path>] [-algorithm_path <algorithm path>]" << endl
-
-typedef AbstractAlgorithm *maker_t();
-// our global factory for making algorithms 
-map<string, maker_t *, less<string> > factory;
-
 
 /**
 * Simulator class. Represents a simulation
@@ -43,16 +43,7 @@ class Simulator{
 	int m_not_active; // num of robots that are not active any more
 
 public:
-	Simulator(map<string, int>& config, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr, House* house) :
-		m_config(config), m_steps(0), m_algorithm_arr(algorithm_arr), m_sensor_arr(sensor_arr),
-		m_num_of_algorithms(algorithm_arr.size()), m_max_steps(house->get_max_steps()), m_winner_num_steps(house->get_max_steps()), m_not_active(0) {
-		init_robot_arr(house);
-		// init m_prev_steps with Direction::Stay
-		for (int i = 0; i < m_num_of_algorithms; i++)
-		{
-			m_prev_steps.push_back(Direction::Stay);
-		}
-	}
+	Simulator(map<string, int>& config, vector<AbstractAlgorithm*>& algorithm_arr, House* house);
 
 	~Simulator();
 
@@ -124,72 +115,6 @@ public:
 			- (sum_dirt_in_house - dirt_collected) * 3
 			+ (is_back_in_docking ? 50 : -200));
 	}
-};
-
-
-/**
-* Main class. Contains functions that opens and loads
-* files(config.ini, *.house, *.so), and check their validity.
-* Also contains the command line proccesing function and the 
-* output functions(printing scores and errors).
-**/
-class Main {
-
-	vector<string> error_list; // error list to be printed at the end
-	vector<string> house_names; // SORTED names of VALID houses files without '.house'
-	vector<string> algorithm_names; // SORTED names of VALID algorithms files without '.so'
-	vector<void*> dl_arr; // vector to hold handles for dynamic libs 
-	
-public:
-
-	vector<string> get_house_names() const{
-		return house_names;
-	}
-
-	// prints error list
-	void print_errors(vector<string>& error_list);
-
-	// checking if the content of configuration file is valid. If not, print message and return false.
-	bool check_configurations_validity(const map<string, int>& config);
-
-	// read from configuration file and return the configurations map
-	map<string, int> get_configurations(const string path);
-
-	// read from .house files and parse them into a house array;
-	vector<House*> get_houses(string path);
-
-	//function for completing miising cells in house matrix by ' '.
-	//In addition, surranding the matrix with wall if needed. Also,
-	//returns how many docking stations in the house, AFTER fixing
-	int fix_house_matrix(string *matrix, int rows, int cols);
-
-	// load .so files that represent algorithms
-	// creates vector of algorithms (one of each type), and vector of sensors (one for each algorithm)
-	tuple<vector<AbstractAlgorithm*>, vector<Sensor*>> get_algorithms_and_sensors(string path, map<string, int>& config);
-
-	// parse the command line arguments
-	// returns a tuple <config_path, house_path, algorithm_path>
-	tuple<string, string, string> command_line_arguments(int argc, char* argv[]);
-
-	// simulate the simulator
-	void simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms, string& house_name);
-
-	// calculates the score matrix and prints it
-	void score_simulation(vector<Simulator*>& sim_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms);
-
-	// trim title in the score matrix to be up to 9 chars and aligned to left
-	string trim_title(string& title);
-
-	// calculate average score (on all houses) of an algorithm with index 'index'
-	double calc_avg(int** score_matrix, int index, int num_of_houses);
-	
-	// prints the score matrix according to given format.
-	// prints errors after that, if exist.
-	void print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matrix);
-
-	// freeing all the memory left to free in the program
-	void deleting_memory(vector<Simulator*>& sim_arr, vector<House*>& house_arr, vector<AbstractAlgorithm*>& algorithm_arr, vector<Sensor*>& sensor_arr,
-		int num_of_houses, int num_of_algorithms);
 };
 
 #endif // _SIMULATOR_H 

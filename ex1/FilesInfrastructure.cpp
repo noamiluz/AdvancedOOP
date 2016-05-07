@@ -35,7 +35,7 @@ void FilesLister::refresh() {
 	}
 	sort(this->filesList_.begin(), this->filesList_.end());
 }
-#endif
+
 
 /**
 * Function that saves the files name who
@@ -45,12 +45,14 @@ void FilesListerWithSuffix::filterFiles() {
 	vector<string> temp = this->filesList_;
 	this->filesList_.clear();
 	for (vector<string>::iterator itr = temp.begin(); itr != temp.end(); ++itr){
-		if (endsWith(*itr, this->suffix_))
+		if (endsWith(*itr, this->suffix_) && !endsWith(*itr, this->_not_equal_to))
 		{
 			this->filesList_.push_back(*itr);
 		}
 	}
 }
+
+#endif
 
 /**
 * Function reciving  a full path to a file and returns its base name.
@@ -85,12 +87,26 @@ string FileParser::trim(string& str) {
 /**
 * Function that given a line read from the configuration file, update the configuration map. (from recitation)
 **/
-void FileParser::processLine(const string& line, map<string, int> &config)
+void FileParser::processLine(const string& line, map<string, int> &config, string& temp_invalid, int& count_invalid)
 {
 	vector<string> tokens = split(line, '=');
 	if (tokens.size() != 2)
 	{
 		return;
 	}
-	config[trim(tokens[0])] = stoi(trim(tokens[1]));
+	string key = trim(tokens[0]);
+	string value = trim(tokens[1]);
+	if (key.compare("MaxStepsAfterWinner") && key.compare("BatteryCapacity") && key.compare("BatteryConsumptionRate") && key.compare("BatteryRechargeRate")){
+		return;
+	}
+	if (!value.empty() && find_if(value.begin(),
+		value.end(), [](char c) { return !isdigit(c); }) == value.end()){ // value is numeric
+		config[key] = stoi(value);
+	}
+	else {
+		count_invalid++;
+		temp_invalid += key + ", ";
+		config[key] = 0;
+	}
+	
 }

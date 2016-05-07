@@ -60,6 +60,18 @@
     <ClInclude Include="GenericAlgorithm.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="AlgorithmRegistration.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Registrar.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MakeUnique.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Main.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="simulator.cpp">
@@ -81,6 +93,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FilesInfrastructure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AlgorithmRegistration.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Registrar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="score_formula.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

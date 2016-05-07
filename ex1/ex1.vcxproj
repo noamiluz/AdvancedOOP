@@ -85,10 +85,14 @@
     <ClInclude Include="316602689_C_.h" />
     <ClInclude Include="AbstractAlgorithm.h" />
     <ClInclude Include="AbstractSensor.h" />
+    <ClInclude Include="AlgorithmRegistration.h" />
     <ClInclude Include="Direction.h" />
     <ClInclude Include="FilesInfrastructure.h" />
     <ClInclude Include="GenericAlgorithm.h" />
     <ClInclude Include="House.h" />
+    <ClInclude Include="Main.h" />
+    <ClInclude Include="MakeUnique.h" />
+    <ClInclude Include="Registrar.h" />
     <ClInclude Include="Robot.h" />
     <ClInclude Include="Sensor.h" />
     <ClInclude Include="SensorInformation.h" />
@@ -98,8 +102,12 @@
     <ClCompile Include="316602689_A_.cpp" />
     <ClCompile Include="316602689_B_.cpp" />
     <ClCompile Include="316602689_C_.cpp" />
+    <ClCompile Include="AlgorithmRegistration.cpp" />
     <ClCompile Include="FilesInfrastructure.cpp" />
     <ClCompile Include="House.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Registrar.cpp" />
+    <ClCompile Include="score_formula.cpp" />
     <ClCompile Include="Sensor.cpp" />
     <ClCompile Include="simulator.cpp" />
   </ItemGroup>

@@ -105,18 +105,4 @@ Direction _316602689_C::step(Direction prevStep) {
 
 }
 
-extern "C" {
-	AbstractAlgorithm *maker(){
-		return new _316602689_C();
-	}
-
-	class proxy {
-	public:
-		proxy(){
-			// register the maker with the factory 
-			factory["316602689_C_"] = maker;
-		}
-	};
-	// our one instance of the proxy
-	proxy p;
-}
+REGISTER_ALGORITHM(_316602689_C)

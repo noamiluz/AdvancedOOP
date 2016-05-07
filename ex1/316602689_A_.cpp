@@ -144,7 +144,7 @@ void _316602689_A::update_scan_house_matrix(SensorInformation info){ //  TO DO- 
 
 }
 
-
+/*
 extern "C" {
 	AbstractAlgorithm *maker(){
 		return new _316602689_A();
@@ -159,4 +159,4 @@ extern "C" {
 	};
 	// our one instance of the proxy
 	proxy p;
-}
+}*/
