@@ -283,7 +283,7 @@ int main(int argc, char* argv[])
 		simulator_arr.push_back(new Simulator(config, tmp, house_arr[i]));
 	}
 
-	// simulate the simulator for each house
+	// simulate the simulator for each house - THIS NEEDS TO BE PARALLELIZED
 	for (int i = 0; i < num_of_houses; i++){
 		main.simulate(*simulator_arr[i], config, num_of_houses, num_of_algorithms, main.get_house_names()[i]);
 	}
