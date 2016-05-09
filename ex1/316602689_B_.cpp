@@ -272,12 +272,6 @@ Direction _316602689_B::step(Direction prevStep){
 		m_has_path = false;
 	}
 
-	/////////////////////////DEBUG////////////////////////
-	if (m_battery_level == 348){
-		cout << "";
-	}
-	///////////////////////////////////////////////////////
-
 	// update graph for the current location
 	SensorInformation s_i = m_sensor->sense();
 	Vertex* cur_vertex = get_vertex(m_relative_docking_location);

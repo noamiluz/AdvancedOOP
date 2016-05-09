@@ -413,7 +413,7 @@ score_formula Main::get_score_formula(const string& path){
 	}
 
 	// assuming the score formula was written under extern "C"
-	formula = reinterpret_cast<int(*)(const map<string, int>&)>((long)dlsym(dlib, "calc_score"));
+	formula = reinterpret_cast<score_formula>((long)dlsym(dlib, "calc_score"));
 	if (formula == NULL){ // dlsym failed
 		cout << "score_formula.so is a valid .so but it does not have a valid score formula" << endl;
 		dlclose(dlib);
@@ -546,31 +546,62 @@ tuple<string, string, string, string, int> Main::command_line_arguments(int argc
 		score_path = "DEFAULT";
 	}
 
-
 	// getting threads number
 	int num_threads = 1;
 	if (threads != -1){
-		num_threads = atoi(threads_num.c_str());
+		if (!threads_num.empty() && find_if(threads_num.begin(),
+			threads_num.end(), [](char c) { return !isdigit(c); }) == threads_num.end()){ // value is numeric
+			int tmp = stoi(threads_num.c_str());
+			if (tmp > 0){ // if positive
+				num_threads = tmp;
+			}
+		}
 	}
 
 	return make_tuple(config_path, house_path, algorithm_path, score_path, num_threads);
 }
 
+
+void Main::execute_simulation_multi_threaded(vector<Simulator*>& simulator_arr, map<string, int>& config, int num_of_threads, int num_of_houses, int num_of_algorithms){
+	// build thread arr for simulating
+	const int size = min(num_of_threads, num_of_houses);
+	vector<thread> thread_arr;
+	for (int i = 0; i < size; i++){
+		thread_arr.push_back(thread(&Main::thread_simulation, this, ref(simulator_arr), ref(config), num_of_houses, num_of_algorithms));
+	}
+	for (int i = 0; i < size; i++){
+		thread_arr[i].join();
+	}
+}
+
+
+// the function is given the threads for simulation on the houses.
+void Main::thread_simulation(vector<Simulator*>& simulator_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms){
+	while (num_of_simulated_houses < num_of_houses){
+		mutex_lock.lock();
+		num_of_simulated_houses++;
+		int tmp = num_of_simulated_houses;
+		mutex_lock.unlock();
+		simulate(*simulator_arr[tmp - 1], config, num_of_algorithms, house_names[tmp - 1]);
+	}
+}
+
+
 /**
 * Function that simulate the simulator (called once for each house).
 **/
-void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms, string& house_name){
+void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_algorithms, string& house_name){
 	FileParser fp;
 	bool winner = false, about_to_finish = false, called_about_to_finish = false;
 	int num_steps_after_winning = 0;
 	int rank_in_competition = 1;
 	string message("");
-
+	/*
 	// setSenor for all algorithms, in each new simulation (i.e - for each house)
 	for (int j = 0; j < num_of_algorithms; j++)
 	{
 		(sim.get_algorithm_arr())[j]->setSensor(*(sim.get_sensor_arr())[j]);
-	}
+	}*/
 
 	// the simulation
 	for (; sim.get_steps() < sim.get_max_steps() && num_steps_after_winning <= config["MaxStepsAfterWinner"] && sim.get_not_active() < num_of_algorithms;)

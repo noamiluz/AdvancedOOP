@@ -6,8 +6,6 @@
 
 #include "simulator.h"
 #include "Main.h"
-//#include <thread>
-//#include <atomic>
 
 Simulator::Simulator(map<string, int>& config, vector<AbstractAlgorithm*>& algorithm_arr, House* house) :
 m_config(config), m_steps(0), m_algorithm_arr(algorithm_arr),
@@ -231,6 +229,14 @@ void Simulator::finish_simulation(){
 	
 }
 
+/*
+void thread_simulation1(Main &main, vector<Simulator*>& simulator_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms){
+	while (main.num_of_simulated_houses < num_of_houses){
+		main.num_of_simulated_houses++;
+		main.simulate(*simulator_arr[main.num_of_simulated_houses], config, num_of_algorithms, main.get_house_names()[main.num_of_simulated_houses]);
+	}
+}*/
+
 
 /**
 * Main function: initialize config arguments, and given houses descriptions,
@@ -282,12 +288,9 @@ int main(int argc, char* argv[])
 		vector<AbstractAlgorithm*> tmp = Registrar::get_instance().get_algorithms();
 		simulator_arr.push_back(new Simulator(config, tmp, house_arr[i]));
 	}
-
-	// simulate the simulator for each house - THIS NEEDS TO BE PARALLELIZED
-	for (int i = 0; i < num_of_houses; i++){
-		main.simulate(*simulator_arr[i], config, num_of_houses, num_of_algorithms, main.get_house_names()[i]);
-	}
 	
+	main.execute_simulation_multi_threaded(simulator_arr, config, num_of_threads, num_of_houses, num_of_algorithms);
+
 	// calculate the score of each robot
 	main.score_simulation(simulator_arr, formula, num_of_houses, num_of_algorithms);
 	// freeing memory

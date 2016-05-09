@@ -27,6 +27,8 @@
 #include <fstream>
 #include <sstream>
 #include <functional>
+#include <thread>
+#include <mutex>
 
 #include <iomanip>
 #include <limits.h>
@@ -48,7 +50,8 @@ class Main {
 	vector<string> house_names; // SORTED names of VALID houses files without '.house'
 	vector<string> algorithm_names; // SORTED names of VALID algorithms files without '.so'
 	vector<void*> dl_arr; // vector to hold handles for dynamic libs  
-
+	int num_of_simulated_houses{ 0 };
+	mutex mutex_lock;
 
 public:
 
@@ -92,8 +95,14 @@ public:
 	// returns a tuple <config_path, house_path, algorithm_path, score_formula_path, threads number>
 	tuple<string, string, string, string, int> command_line_arguments(int argc, char* argv[]);
 
+	// execute simulation multi threaded
+	void execute_simulation_multi_threaded(vector<Simulator*>& simulator_arr, map<string, int>& config, int num_of_threads, int num_of_houses, int num_of_algorithms);
+
+	// the function is given the threads for simulation on the houses.
+	void thread_simulation(vector<Simulator*>& simulator_arr, map<string, int>& config, int num_of_houses, int num_of_algorithms);
+
 	// simulate the simulator
-	void simulate(Simulator& sim, map<string, int>& config, int num_of_houses, int num_of_algorithms, string& house_name);
+	void simulate(Simulator& sim, map<string, int>& config, int num_of_algorithms, string& house_name);
 
 	// calculates the score matrix and prints it
 	void score_simulation(vector<Simulator*>& sim_arr, score_formula formula, int num_of_houses, int num_of_algorithms);

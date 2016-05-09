@@ -10,13 +10,13 @@ default:
 OBJS = testdcl.o
 
 simulator: simulator.o House.o Sensor.o FilesInfrastructure.o AlgorithmRegistration.o Registrar.o Main.o
-	g++ -rdynamic -o $@ $^ -std=c++11 -Wall -O2 -pedantic -ldl
+	g++ -rdynamic -o $@ $^ -std=c++11 -Wall -O2 -pedantic -lpthread -ldl
 
 simulator.o: simulator.cpp simulator.h AbstractAlgorithm.h AbstractSensor.h Direction.h SensorInformation.h House.h Sensor.h Robot.h Main.h FilesInfrastructure.h
 	g++ -c -std=c++11 -Wall -pedantic simulator.cpp
 
 Main.o: Main.cpp Main.h simulator.h AbstractAlgorithm.h AbstractSensor.h Direction.h SensorInformation.h FilesInfrastructure.h House.h Sensor.h Robot.h AlgorithmRegistration.h Registrar.h MakeUnique.h
-	g++ -c -std=c++11 -Wall -pedantic Main.cpp
+	g++ -c -std=c++11 -Wall -pedantic -lpthread Main.cpp
 
 House.o: House.cpp House.h 
 	g++ -c -std=c++11 -Wall -pedantic House.cpp
