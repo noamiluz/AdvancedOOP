@@ -160,10 +160,10 @@ in which the sum of dirt is maximized, and is at most steps_left.
 if there is no such path, returns an empty stack.
 path_length == the returned value from BFS / DIJKSTRA (respectively).
 */
-stack<Direction> _316602689_B::get_stack_directions(Vertex* s, Vertex* t, int path_length, int steps_left){
+deque<Direction> _316602689_B::get_stack_directions(Vertex* s, Vertex* t, int path_length, int steps_left){
 
 	int count = steps_left - path_length;
-	stack<Direction> directions_stack;
+	deque<Direction> directions_stack;
 
 	if (count < 0){
 		return directions_stack;
@@ -174,10 +174,10 @@ stack<Direction> _316602689_B::get_stack_directions(Vertex* s, Vertex* t, int pa
 
 	while (cur != nullptr){
 		Direction d = get_direction(cur, prev);
-		directions_stack.push(d);
+		directions_stack.push_front(d);
 		int dirt_level = cur->get_dirt_level();
 		while (dirt_level > 0 && count > 0){
-			directions_stack.push(Direction::Stay);
+			directions_stack.push_front(Direction::Stay);
 			dirt_level--;
 			count--;
 		}
@@ -196,22 +196,22 @@ bfs is the result of performing BFS on the graph.
 dijkstra is the result of performing DIJKSTRA on the graph.
 ASSUME: s != t
 */
-stack<Direction> _316602689_B::choose_path(const pair<int, int>& s_location, const pair<int, int>& t_location, int bfs, int dijkstra,
+deque<Direction> _316602689_B::choose_path(const pair<int, int>& s_location, const pair<int, int>& t_location, int bfs, int dijkstra,
 	int steps_left, bool urgent){
 	Vertex* s = m_graph[s_location];
 	Vertex* t = m_graph[t_location];
 	if (urgent){
 		return get_stack_directions(s, t, bfs, bfs);
 	}
-	const stack<Direction>& bfs_stack = get_stack_directions(s, t, bfs, steps_left);
-	const stack<Direction>& dijkstra_stack = get_stack_directions(s, t, dijkstra, steps_left);
+	const deque<Direction>& bfs_stack = get_stack_directions(s, t, bfs, steps_left);
+	const deque<Direction>& dijkstra_stack = get_stack_directions(s, t, dijkstra, steps_left);
 	if (bfs_stack.empty()){
 		return dijkstra_stack;
 	}
 	if (dijkstra_stack.empty()){
 		return bfs_stack;
 	}
-	if (dijkstra_stack.size() > bfs_stack.size()){
+	if (dijkstra_stack.size() - dijkstra > bfs_stack.size() - bfs){
 		return dijkstra_stack;
 	}
 	return bfs_stack;
@@ -276,6 +276,8 @@ Direction _316602689_B::step(Direction prevStep){
 	SensorInformation s_i = m_sensor->sense();
 	Vertex* cur_vertex = get_vertex(m_relative_docking_location);
 	cur_vertex->set_dirt_level(s_i.dirtLevel); // set the current vertex's dirt level
+
+	// set the neighbors of the current vertex
 	for (int i = 0; i < 4; i++)
 	{
 		if (!s_i.isWall[i]){
@@ -297,15 +299,38 @@ Direction _316602689_B::step(Direction prevStep){
 				break;
 			}
 			add_edge(cur_vertex, neighbor);
+			if (neighbor->get_dirt_level() == -1){
+				non_visited.push_back(neighbor);
+			}
 		}
 	}
 
+	// if the vertex has dirt, keep it in the has_dirt vector. otherwise erase it from there.
+	auto it1 = find(has_dirt.begin(), has_dirt.end(), cur_vertex);
+	if (it1 != has_dirt.end()){
+		if (cur_vertex->get_dirt_level() == 0){
+			has_dirt.erase(it1);
+		}
+	}
+	else {
+		if (cur_vertex->get_dirt_level() > 0){
+			has_dirt.push_back(cur_vertex);
+		}
+	}
+
+	// if it is the first time we get to the vertex, erase it from the non visited list.
+	auto it2 = find(non_visited.begin(), non_visited.end(), cur_vertex);
+	if (it2 != non_visited.end()){
+		non_visited.erase(it2);
+	}
+
 	if (m_has_path2){
-		if (m_path.top() != prevStep){
+		cout << "has path2" << endl;
+		if (m_path.front() != prevStep){
 			m_has_path2 = false;
 		}
 		else {
-			m_path.pop();
+			m_path.pop_front();
 			if (m_path.empty()){
 				m_has_path2 = false;
 			}
@@ -313,6 +338,7 @@ Direction _316602689_B::step(Direction prevStep){
 	}
 
 	if (m_has_path){
+		cout << "has path1" << endl;
 		if (m_path.empty()){
 			if (IS_DOCKING(m_relative_docking_location)){
 				return Direction::Stay;			
@@ -325,15 +351,15 @@ Direction _316602689_B::step(Direction prevStep){
 					m_has_path = false;
 					return Direction::Stay;
 				}
-				return m_path.top();
+				return m_path.front();
 			}
 		}
 		else { // m_path is not empty
 			if (IS_DOCKING(m_relative_docking_location)){
 				return Direction::Stay;
 			}
-			if (prevStep == m_path.top()){
-				m_path.pop();
+			if (prevStep == m_path.front()){
+				m_path.pop_front();
 				if (m_path.empty()){
 					int bfs = call_BFS(m_relative_docking_location, DOCKING_STATION);
 					int dijkstra = call_DIJKSTRA(m_relative_docking_location, DOCKING_STATION);
@@ -342,10 +368,10 @@ Direction _316602689_B::step(Direction prevStep){
 						m_has_path = false;
 						return Direction::Stay;
 					}
-					return m_path.top();
+					return m_path.front();
 				}
 				else{
-					return m_path.top();
+					return m_path.front();
 				}
 				
 			}
@@ -357,28 +383,27 @@ Direction _316602689_B::step(Direction prevStep){
 					m_has_path = false;
 					return Direction::Stay;
 				}
-				return m_path.top();
+				return m_path.front();
 			}
 		}
 	}
 
-	bool too_far = false;
+	//bool too_far = false;
 	if (!(IS_DOCKING(m_relative_docking_location))){
 		// calculate if we are too far from docking
 		int bfs = call_BFS(m_relative_docking_location, DOCKING_STATION);
-		if (bfs >= m_config["MaxStepsAfterWinner"] || (m_about_to_finish_flag && bfs >= m_steps_till_finish)){
-			too_far = true;
-		}
-
+		//if (bfs >= m_config["MaxStepsAfterWinner"] || (m_about_to_finish_flag && bfs >= m_steps_till_finish)){
+		//	too_far = true;
+		//}
 		int dijkstra = call_DIJKSTRA(m_relative_docking_location, DOCKING_STATION);
 		int approx = (m_battery_level / m_config["BatteryConsumptionRate"]);
 		// check if urgent
-		stack<Direction> tmp = choose_path(m_relative_docking_location, DOCKING_STATION, bfs, dijkstra, approx, true);
-		if (!tmp.empty() && approx - tmp.size() >= 0 && approx - tmp.size() < 2){
+		deque<Direction> tmp = choose_path(m_relative_docking_location, DOCKING_STATION, bfs, dijkstra, approx, true);
+		if (!tmp.empty() && approx - tmp.size() >= 0 && approx - tmp.size() < 10){
 			m_path = tmp;
 			m_has_path = true;
 			m_has_path2 = false;
-			return m_path.top();
+			return m_path.front();
 		}
 		// if not urgent
 		tmp = choose_path(m_relative_docking_location, DOCKING_STATION, bfs, dijkstra, approx);
@@ -386,17 +411,17 @@ Direction _316602689_B::step(Direction prevStep){
 			m_path = tmp;
 			m_has_path = true;
 			m_has_path2 = false;
-			return m_path.top();
+			return m_path.front();
 		}
 
 		if (m_about_to_finish_flag){
 			// check if urgent
-			stack<Direction> tmp = choose_path(m_relative_docking_location, DOCKING_STATION, bfs, dijkstra, m_steps_till_finish, true);
+			deque<Direction> tmp = choose_path(m_relative_docking_location, DOCKING_STATION, bfs, dijkstra, m_steps_till_finish, true);
 			if (!tmp.empty() && m_steps_till_finish - tmp.size() >= 0 && m_steps_till_finish - tmp.size() < 2){
 				m_path = tmp;
 				m_has_path = true;
 				m_has_path2 = false;
-				return m_path.top();
+				return m_path.front();
 			}
 			// if not urgent
 			tmp = choose_path(m_relative_docking_location, DOCKING_STATION, bfs, dijkstra, m_steps_till_finish);
@@ -404,20 +429,15 @@ Direction _316602689_B::step(Direction prevStep){
 				m_path = tmp;
 				m_has_path = true;
 				m_has_path2 = false;
-				return m_path.top();
+				return m_path.front();
 			}
 		}
 	}
 
 	if (m_has_path2){
-		return m_path.top();
+		return m_path.front();
 	}
 
-	///////////////DEBUG///////////
-	if (m_relative_docking_location.first == 0 && m_relative_docking_location.second == 3){
-		cout << "";
-	}
-	///////////////////////////////
 
 	int max = cur_vertex->get_dirt_level();
 	int sum_dirt_in_area = max;
@@ -425,14 +445,16 @@ Direction _316602689_B::step(Direction prevStep){
 	for (Vertex* v : cur_vertex->get_adj_list())
 	{
 		// if the cell is too far from the docking (aka, if aboutToFinish is on, we cant reach docking), dont go there
-		if (too_far){ 
-			int bfs = call_BFS(v->get_location(), DOCKING_STATION);
-			if (bfs >= m_config["MaxStepsAfterWinner"] || (m_about_to_finish_flag && bfs >= m_steps_till_finish)){
-				continue;
-			}
-		}
-		// if there is a cell we havent visited yet, go to it
-		if (v->get_dirt_level() == -1){ // we havent visited this vertex yet
+		//if (too_far){ 
+		//	int bfs = call_BFS(v->get_location(), DOCKING_STATION);
+		//	if (bfs >= m_config["MaxStepsAfterWinner"] || (m_about_to_finish_flag && bfs >= m_steps_till_finish)){
+		//		continue;
+		//	}
+		//}
+
+		// if there is a cell we havent visited yet, and we are not in a rush to finish, go to it
+		if (v->get_dirt_level() == -1 && !m_about_to_finish_flag){ // we havent visited this vertex yet
+			cout << "getting first unvisited" << endl;
 			return get_direction(cur_vertex, v);
 		}
 		sum_dirt_in_area += v->get_dirt_level(); // calculate the sum of dust around the current cell
@@ -446,30 +468,78 @@ Direction _316602689_B::step(Direction prevStep){
 
 	// if there is no dust around the current location
 	if (sum_dirt_in_area == 0){
+		/*pair<int, int> max_loc = DOCKING_STATION;
+
+		// sort according to how much dirt there is on the way
+		auto lambda_sort = [this](Vertex *u, Vertex *v) {
+			int bfs_u = call_BFS(m_relative_docking_location, u->get_location());
+			int dijkstra_u = call_DIJKSTRA(m_relative_docking_location, u->get_location());
+			auto tmp_u = choose_path(m_relative_docking_location, u->get_location(), bfs_u, dijkstra_u, m_about_to_finish_flag ? (m_steps_till_finish / 2) : ((m_battery_level / m_config["BatteryConsumptionRate"]) / 2));
+
+			int bfs_v = call_BFS(m_relative_docking_location, v->get_location());
+			int dijkstra_v = call_DIJKSTRA(m_relative_docking_location, v->get_location());
+			auto tmp_v = choose_path(m_relative_docking_location, v->get_location(), bfs_v, dijkstra_v, m_about_to_finish_flag ? (m_steps_till_finish / 2) : ((m_battery_level / m_config["BatteryConsumptionRate"]) / 2));
+
+			int sum_dirt_u = count_if(tmp_u.begin(), tmp_u.end(), [](Direction d){ return d == Direction::Stay; });
+			int sum_dirt_v = count_if(tmp_v.begin(), tmp_v.end(), [](Direction d){ return d == Direction::Stay; });
+
+			return -(sum_dirt_u - sum_dirt_v);
+		};
+
+		if (!has_dirt.empty()){
+			sort(has_dirt.begin(), has_dirt.end(), lambda_sort);
+			max_loc = has_dirt.front()->get_location();
+		}
+		*/
+
 		int max_dirt = 0;
 		pair<int, int> max_loc = DOCKING_STATION;
 		// find a cell with the most dust in it
 		for (auto& pair : m_graph){
-			int bfs = call_BFS(pair.second->get_location(), { 0, 0 });
-			if (bfs >= m_config["MaxStepsAfterWinner"] || (m_about_to_finish_flag && bfs >= m_steps_till_finish)){
-				continue;
-			}
+			//int bfs = call_BFS(pair.second->get_location(), { 0, 0 });
+			//if (bfs >= m_config["MaxStepsAfterWinner"] || (m_about_to_finish_flag && bfs >= m_steps_till_finish)){
+			//	continue;
+			//}
 			if (pair.second->get_dirt_level() > max_dirt){
 				max_dirt = pair.second->get_dirt_level();
 				max_loc = pair.first;
 			}
 		}
 
+
 		if (IS_DOCKING(max_loc)){ // if did not find such cell
 			pair<int, int> planB_loc = DOCKING_STATION;
 			bool flag = false;
+			/*
+			// sort according to the nearest unvisited cell
+			auto lambda = [this](Vertex *u, Vertex *v) {
+				int bfs_u = call_BFS(m_relative_docking_location, u->get_location());
+				int dijkstra_u = call_DIJKSTRA(m_relative_docking_location, u->get_location());
+				auto tmp_u = choose_path(m_relative_docking_location, u->get_location(), bfs_u, dijkstra_u, m_about_to_finish_flag ? (m_steps_till_finish / 2) : ((m_battery_level / m_config["BatteryConsumptionRate"]) / 2));
+					
+				int bfs_v = call_BFS(m_relative_docking_location, v->get_location());
+				int dijkstra_v = call_DIJKSTRA(m_relative_docking_location, v->get_location());
+				auto tmp_v = choose_path(m_relative_docking_location, v->get_location(), bfs_v, dijkstra_v, m_about_to_finish_flag ? (m_steps_till_finish / 2) : ((m_battery_level / m_config["BatteryConsumptionRate"]) / 2));
+					
+				int dist_u = tmp_u.empty() ? INT_MAX : tmp_u.size();
+				int dist_v = tmp_v.empty() ? INT_MAX : tmp_v.size();
+				return dist_u - dist_v;
+			};
+
+			if (!non_visited.empty()){
+				sort(non_visited.begin(), non_visited.end(), lambda);
+				flag = true;
+				planB_loc = non_visited.front()->get_location();
+			}*/
+
+
 			// find a cell we haven't visited yet
 			for (auto& pair : m_graph){
 				for (Vertex* v : pair.second->get_adj_list()){
-					int bfs = call_BFS(v->get_location(), { 0, 0 });
-					if (bfs >= m_config["MaxStepsAfterWinner"] || (m_about_to_finish_flag && bfs >= m_steps_till_finish)){
-						continue;
-					}
+					//int bfs = call_BFS(v->get_location(), { 0, 0 });
+					//if (bfs >= m_config["MaxStepsAfterWinner"] || (m_about_to_finish_flag && bfs >= m_steps_till_finish)){
+						//continue;
+					//}
 					if (v->get_dirt_level() == -1){
 						planB_loc = v->get_location();
 						flag = true;
@@ -482,8 +552,9 @@ Direction _316602689_B::step(Direction prevStep){
 					break;
 				}
 			}
-
+			
 			if (flag){ // if we found such cell, go to it
+				cout << "go to the closest unvisited cell" << endl;
 				int bfs = call_BFS(m_relative_docking_location, planB_loc);
 				int dijkstra = call_DIJKSTRA(m_relative_docking_location, planB_loc);
 				m_path = choose_path(m_relative_docking_location, planB_loc, bfs, dijkstra, m_about_to_finish_flag ? (m_steps_till_finish / 2) : ((m_battery_level / m_config["BatteryConsumptionRate"]) / 2));
@@ -491,9 +562,10 @@ Direction _316602689_B::step(Direction prevStep){
 					return get_direction(cur_vertex, max_vertex);
 				}
 				m_has_path2 = true;
-				return m_path.top();
+				return m_path.front();
 			}
 			else{ // we have visited in every cell in the house, and there is no dust, so we finished cleaning - return to docking and stay there
+				cout << "finished simulation" << endl;
 				int bfs = call_BFS(m_relative_docking_location, DOCKING_STATION);
 				int dijkstra = call_DIJKSTRA(m_relative_docking_location, DOCKING_STATION);
 				m_path = choose_path(m_relative_docking_location, DOCKING_STATION, bfs, dijkstra, (m_battery_level / m_config["BatteryConsumptionRate"]));
@@ -501,10 +573,11 @@ Direction _316602689_B::step(Direction prevStep){
 					return get_direction(cur_vertex, max_vertex);
 				}
 				m_has_path = true;
-				return m_path.top();
+				return m_path.front();
 			}
 		}
 		else { // we found a cell with maximum dust, go to it
+			cout << "getting max dirt visited cell" << endl;
 			int bfs = call_BFS(m_relative_docking_location, max_loc);
 			int dijkstra = call_DIJKSTRA(m_relative_docking_location, max_loc);
 			m_path = choose_path(m_relative_docking_location, max_loc, bfs, dijkstra, m_about_to_finish_flag ? (m_steps_till_finish / 2) : ((m_battery_level / m_config["BatteryConsumptionRate"]) / 2));
@@ -512,10 +585,10 @@ Direction _316602689_B::step(Direction prevStep){
 				return get_direction(cur_vertex, max_vertex);
 			}
 			m_has_path2 = true;
-			return m_path.top();
+			return m_path.front();
 		}
 	}
-
+	cout << "getting max dirt neighbor" << endl;
 	// all the neighbors have been visited, so go to the vertex with the maximal dirt in the area
 	return get_direction(cur_vertex, max_vertex);
 }

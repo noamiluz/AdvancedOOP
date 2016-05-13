@@ -679,14 +679,14 @@ void Main::score_simulation(vector<Simulator*>& sim_arr, score_formula formula, 
 		}
 	}
 
-	vector<pair<string, double>> algorithm_avg;
+	vector<pair<pair<int, string>, double>> algorithm_avg;
 	for (int i = 0; i < num_of_algorithms; i++)
 	{
-		algorithm_avg.push_back(pair<string, double>(algorithm_names[i], calc_avg(score_matrix, i, num_of_houses)));
+		algorithm_avg.push_back(pair<pair<int, string>, double>(pair<int, string>(i, algorithm_names[i]), calc_avg(score_matrix, i, num_of_houses)));
 	}
 
 
-	sort(algorithm_avg.begin(), algorithm_avg.end(), [](const pair<string, double>& p1, const pair<string, double>& p2){ if (p1.second == p2.second) return p1.first.compare(p2.first); else return int(p2.second - p1.second); });
+	sort(algorithm_avg.begin(), algorithm_avg.end(), [](const pair<pair<int,string>, double>& p1, const pair<pair<int, string>, double>& p2){ if (p1.second == p2.second) return p1.first.second.compare(p2.first.second); else return int(p2.second - p1.second); });
 
 
 	print_score_and_errors(sim_arr, score_matrix, algorithm_avg);
@@ -724,7 +724,7 @@ double Main::calc_avg(int** score_matrix, int index, int num_of_houses){
 * prints errors after that, if exist. This function assumes
 * that the algorithm_arr, house_arr and robot_matrix are sorted.
 **/
-void Main::print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matrix, vector<pair<string, double>>& algorithm_avg){
+void Main::print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matrix, vector<pair<pair<int, string>, double>>& algorithm_avg){
 
 	const int num_of_chars_cols = 14 + 11 * (sim_arr.size() + 1) + 1;
 	const int num_of_chars_rows = 2 * ((*sim_arr[0]).get_num_of_algorithms() + 1) + 1;
@@ -750,11 +750,11 @@ void Main::print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matri
 		int algo_index = ((i - 1) / 2) - 1;
 		stringstream tmp;
 		tmp << "|";
-		string name(algorithm_avg[algo_index].first);
+		string name(algorithm_avg[algo_index].first.second);
 		tmp << name << string(13 - name.length(), ' ');
 		for (int j = 0; j < length; j++)
 		{
-			string score = to_string(score_matrix[algo_index][j]);
+			string score = to_string(score_matrix[algorithm_avg[algo_index].first.first][j]);
 			tmp << "|" << string(10 - score.length(), ' ') << score;
 		}
 		double d = algorithm_avg[algo_index].second;

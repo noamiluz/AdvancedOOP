@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <vector>
 #include <queue>
-#include <stack>
+#include <deque>
 #include <algorithm>
 #include <iostream>
 #include <limits.h>
@@ -21,11 +21,6 @@
 #define IS_DOCKING(a) a.first == 0 && a.second == 0
 
 using namespace std;
-
-typedef AbstractAlgorithm *maker_t();
-
-// global factory for making algorithms 
-extern map<string, maker_t *, less<string> > factory;
 
 
 /**
@@ -116,7 +111,9 @@ class _316602689_B : public AbstractAlgorithm{
 	bool m_has_path2; // true iff the algorithm is in his way to another cell with positive dirt.
 	int m_battery_level; // current battery level
 	int m_steps_till_finish; // relevant if m_about_to_finish_flag is turned on. represents the number of steps until the simulator finishes.
-	stack<Direction> m_path; // relevant if m_has_path is turned on. represent the stack of directions which the algorithm has to go until the flag is off.
+	deque<Direction> m_path; // relevant if m_has_path is turned on. represent the stack of directions which the algorithm has to go until the flag is off.
+	vector<Vertex*> non_visited; // a vector of the non-visited cells
+	vector<Vertex*> has_dirt; // a vector of the cells that have dirt in them (and of course have been visited)
 	map<pair<int, int>, Vertex*> m_graph; // the graph that is being constructed during the simulation.
 
 
@@ -193,7 +190,7 @@ class _316602689_B : public AbstractAlgorithm{
 	if there is no such path, returns an empty stack.
 	path_length == the returned value from BFS / DIJKSTRA (respectively).
 	*/
-	stack<Direction> get_stack_directions(Vertex* s, Vertex* t, int path_lenght, int steps_left);
+	deque<Direction> get_stack_directions(Vertex* s, Vertex* t, int path_lenght, int steps_left);
 
 	/**
 	returns the best path from s to t, which its length is at most steps_left.
@@ -202,7 +199,7 @@ class _316602689_B : public AbstractAlgorithm{
 	dijkstra is the result of performing DIJKSTRA on the graph.
 	ASSUME: s != t
 	*/
-	stack<Direction> choose_path(const pair<int, int>& s_location, const pair<int, int>& t_location, int bfs, int dijkstra,
+	deque<Direction> choose_path(const pair<int, int>& s_location, const pair<int, int>& t_location, int bfs, int dijkstra,
 		int steps_left, bool urgent = false);
 
 	/**

@@ -115,7 +115,7 @@ public:
 
 	// prints the score matrix according to given format.
 	// prints errors after that, if exist.
-	void print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matrix, vector<pair<string, double>>& algorithm_avg);
+	void print_score_and_errors(vector<Simulator*>& sim_arr, int** score_matrix, vector<pair<pair<int,string>, double>>& algorithm_avg);
 
 	// freeing all the memory left to free in the program
 	void deleting_memory(vector<House*>& house_arr, vector<Simulator*>& sim_arr);
