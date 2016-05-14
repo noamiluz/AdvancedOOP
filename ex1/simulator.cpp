@@ -85,8 +85,8 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 		
 		///////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////
-		/*
-		if (i == 2){
+		
+		if (i == 1){
 			cout << "\033[2J\033[1;1H";
 			cout << "simulator battery level: " << cur_robot->get_curr_battary_level() << endl;
 			cout << "step number in the simulator " << m_steps << endl;
@@ -104,10 +104,10 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 
 			}
 			cout << endl << endl;
-			usleep(500000);
+			//usleep(500000);
 
 		}
-		*/
+		
 		////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////
 

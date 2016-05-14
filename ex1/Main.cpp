@@ -686,7 +686,7 @@ void Main::score_simulation(vector<Simulator*>& sim_arr, score_formula formula, 
 	}
 
 
-	sort(algorithm_avg.begin(), algorithm_avg.end(), [](const pair<pair<int,string>, double>& p1, const pair<pair<int, string>, double>& p2){ if (p1.second == p2.second) return p1.first.second.compare(p2.first.second); else return int(p2.second - p1.second); });
+	sort(algorithm_avg.begin(), algorithm_avg.end(), [](const pair<pair<int,string>, double>& p1, const pair<pair<int, string>, double>& p2){ if (p1.second == p2.second) return p1.first.second.compare(p2.first.second) < 0; else return p2.second - p1.second < 0; });
 
 
 	print_score_and_errors(sim_arr, score_matrix, algorithm_avg);

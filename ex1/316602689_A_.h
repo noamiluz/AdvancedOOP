@@ -11,11 +11,6 @@
 
 using namespace std;
 
-typedef AbstractAlgorithm *maker_t();
-
-// global factory for making algorithms 
-extern map<string, maker_t *, less<string> > factory;
-
 /**
 * _316602689_A class. A determenistic algorithm,
 * finds the closest unscanned node using bfs and clean it tottaly.
