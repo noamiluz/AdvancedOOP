@@ -2,6 +2,11 @@
 #ifndef __GENERIC_ALGORITHM_H 
 #define __GENERIC_ALGORITHM_H 
 
+#include <vector>
+#include <queue>
+#include <climits>
+#include <algorithm>
+#include <iostream>
 #include <stdio.h>
 #include <stack>
 #include "AbstractAlgorithm.h"

@@ -4,6 +4,7 @@
 #include "316602689_B_.h"
 #endif
 
+#include <unistd.h>
 #include "simulator.h"
 #include "Main.h"
 
@@ -15,8 +16,8 @@ m_num_of_algorithms(algorithm_arr.size()), m_max_steps(house->get_max_steps()), 
 	for (int i = 0; i < m_num_of_algorithms; i++)
 	{
 		Sensor *tmp = new Sensor();
-		m_algorithm_arr[i]->setSensor(*tmp);
 		m_algorithm_arr[i]->setConfiguration(m_config);
+		m_algorithm_arr[i]->setSensor(*tmp);
 		m_sensor_arr.push_back(tmp);
 		m_prev_steps.push_back(Direction::Stay);
 	}
@@ -84,8 +85,9 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 		
 		///////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////
-		
-		if (i == 0){
+		/*
+		if (i == 2){
+			cout << "\033[2J\033[1;1H";
 			cout << "simulator battery level: " << cur_robot->get_curr_battary_level() << endl;
 			cout << "step number in the simulator " << m_steps << endl;
 			for (int r = 0; r < cur_house->get_house_matrix_rows(); r++)
@@ -93,7 +95,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 				for (int c = 0; c < cur_house->get_house_matrix_cols(); c++)
 				{
 					if (r == cur_loc.first && c == cur_loc.second){
-						cout << '@';
+						cout << 'R';
 						continue;
 					}
 					cout << cur_house->get_house_matrix()[r][c];
@@ -102,8 +104,10 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 
 			}
 			cout << endl << endl;
-		}
+			usleep(500000);
 
+		}
+		*/
 		////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////
 
