@@ -28,6 +28,8 @@ class _316602689_C : public GenericAlgorithm {
 	pair<int, int> m_docking_station_location_in_scan_map; // keeps the 'D' location at the scaaned house map.
 	bool m_needs_to_return; // a flag that turns on if there is a need to return to 'D' - finish/battery reasons.
 	bool m_finished_cleaning; // a flag for finishing the house cleaning.
+	vector<pair<int, int>> m_one_dirt_left_locations;
+	bool m_needs_to_trap_left_dirt_on_prev_path; // a flag that turns on if we used half battery capacity, to try catch left dirt on prev path.
 	map<pair<int, int>, char> m_scan_house_map;
 
 	// an inner class to convert the scaaned house to a graph and 
@@ -54,7 +56,8 @@ class _316602689_C : public GenericAlgorithm {
 public:
 
 	_316602689_C() : GenericAlgorithm(), m_prev_dirt(0), m_scan_map_location(0, 0),
-		m_docking_station_location_in_scan_map(0, 0), m_needs_to_return(false){
+		m_docking_station_location_in_scan_map(0, 0), m_needs_to_return(false), m_finished_cleaning(false),
+		m_needs_to_trap_left_dirt_on_prev_path(false) {
 		init_map();
 	}
 
