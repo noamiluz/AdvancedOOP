@@ -49,7 +49,7 @@ void Simulator::init_robot_arr(House* house) {
 * according to it's corresponding algorithm.
 * Returns cuurent rank in competition achieved.
 **/
-int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, string& message){
+int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, string& message){
 	m_steps++; // increment the number of steps
 	Robot * cur_robot;
 	bool is_someone_finished = false;
@@ -201,9 +201,7 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 	}
 
 	if (is_someone_finished){ // if there were robots who finished in this step increment the rank
-		int ret = rank_in_competition;
 		rank_in_competition += num_of_winners_this_step;
-		return ret;
 	}
 	return rank_in_competition;
 }

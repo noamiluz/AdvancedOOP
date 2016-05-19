@@ -100,7 +100,7 @@ public:
 	// iterate over all houses, for each house runs a single steps of all the algorithms (in parallel).
 	// if the flag about_to_finish == true, the function aboutToFinish(int stepsTillFinishing) of each algorithm is called.
 	// rank_in_competition == 1,2,3,4 
-	int simulate_step(int& rank_in_competition, bool about_to_finish, string& message);
+	int simulate_step(int rank_in_competition, bool about_to_finish, string& message);
 
 	// update all the robots that did not finish cleaning
 	void finish_simulation();
