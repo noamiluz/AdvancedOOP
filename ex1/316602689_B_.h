@@ -112,27 +112,17 @@ class _316602689_B : public AbstractAlgorithm{
 	int m_battery_level; // current battery level
 	int m_steps_till_finish; // relevant if m_about_to_finish_flag is turned on. represents the number of steps until the simulator finishes.
 	deque<Direction> m_path; // relevant if m_has_path is turned on. represent the stack of directions which the algorithm has to go until the flag is off.
-	vector<Vertex*> non_visited; // a vector of the non-visited cells
-	vector<Vertex*> has_dirt; // a vector of the cells that have dirt in them (and of course have been visited)
+	//vector<Vertex*> non_visited; // a vector of the non-visited cells
+	//vector<Vertex*> has_dirt; // a vector of the cells that have dirt in them (and of course have been visited)
 	map<pair<int, int>, Vertex*> m_graph; // the graph that is being constructed during the simulation.
 
 
-	void add_edge(Vertex* u, Vertex* v){
-		if (u != nullptr && v != nullptr){
-			u->add_edge(v);
-			v->add_edge(u);
-		}
-	}
+	void add_edge(Vertex* u, Vertex* v);
 
 	/**
 	returns pointer to the wanted vertex. if does not exist, create it.
 	*/
-	Vertex* get_vertex(const pair<int, int>& location){
-		if (m_graph.find(location) == m_graph.end()){
-			m_graph[location] = new Vertex(location, IS_DOCKING(location) ? 0 : -1); // will be deleted in delete_graph func
-		}
-		return m_graph[location];
-	}
+	Vertex* get_vertex(const pair<int, int>& location);
 
 
 	/**
@@ -147,36 +137,11 @@ class _316602689_B : public AbstractAlgorithm{
 	*/
 	int BFS(Vertex* s, Vertex* t);
 
-	/**
-	init vertices values for DIJKSTRA
-	*/
-	void init_DIJKSTRA();
-
-	/**
-	performs DIJKSTRA on the current graph.
-	returns the sum of steps in a path from s to t, in which the sum of dirt on it is maximized.
-	ASSUME: s != t
-	*/
-	int DIJKSTRA(Vertex* s, Vertex* t);
 
 	/**
 	performs BFS on the current graph.
 	*/
-	int call_BFS(const pair<int, int>& s_location, const pair<int, int>& t_location){
-		Vertex* s = m_graph[s_location];
-		Vertex* t = m_graph[t_location];
-		return BFS(s, t);
-	}
-
-	/**
-	performs DIJKSTRA on the current graph.
-	*/
-	int call_DIJKSTRA(const pair<int, int>& s_location, const pair<int, int>& t_location){
-		Vertex* s = m_graph[s_location];
-		Vertex* t = m_graph[t_location];
-		return DIJKSTRA(s, t);
-	}
-
+	int call_BFS(const pair<int, int>& s_location, const pair<int, int>& t_location);
 
 	/**
 	returns the direction we have to go from cur to next.
@@ -184,23 +149,12 @@ class _316602689_B : public AbstractAlgorithm{
 	Direction get_direction(Vertex* prev, Vertex* cur);
 
 	/**
-	is called right after BFS / DIJKSTRA.
-	returns a path from s to t which was found during BFS / DIJKSTRA (respectively),
-	in which the sum of dirt is maximized, and is at most steps_left.
+	is called right after BFS.
+	returns a path from s to t which was found during BFS,
 	if there is no such path, returns an empty stack.
-	path_length == the returned value from BFS / DIJKSTRA (respectively).
+	path_length == the returned value from BFS.
 	*/
-	deque<Direction> get_stack_directions(Vertex* s, Vertex* t, int path_lenght, int steps_left);
-
-	/**
-	returns the best path from s to t, which its length is at most steps_left.
-	if urgent == true, returns the shortest path (on edges).
-	bfs is the result of performing BFS on the graph.
-	dijkstra is the result of performing DIJKSTRA on the graph.
-	ASSUME: s != t
-	*/
-	deque<Direction> choose_path(const pair<int, int>& s_location, const pair<int, int>& t_location, int bfs, int dijkstra,
-		int steps_left, bool urgent = false);
+	deque<Direction> get_stack_directions(const pair<int, int>& s_location, const pair<int, int>& t_location);
 
 	/**
 	free graph memory
@@ -217,7 +171,11 @@ class _316602689_B : public AbstractAlgorithm{
 	*/
 	void set_battery_level();
 
-
+	/**
+	returns the closest vertex to cur_vertex which satisfy pred.
+	if there is no vertex satisfies the pred, returns DOCKING_STATION
+	*/
+	_316602689_B::Vertex* find_closest(Vertex* cur_vertex, function<bool(Vertex*)> pred);
 
 
 public:

@@ -73,9 +73,6 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 
 		if (about_to_finish){
 			m_algorithm_arr[i]->aboutToFinish(m_config["MaxStepsAfterWinner"]);
-			if (i == 0){
-				cout << endl << "!!!!!!!!!!!!!!!!!! called to aboutTOFinish !!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-			}
 		}
 
 		Direction d = m_algorithm_arr[i]->step(m_prev_steps[i]); // ask the algorithm what direction to go
@@ -85,10 +82,8 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 		
 		///////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////
-		
-
-		if (i == 2){
-			cout << "\033[2J\033[1;1H";
+		/*
+		if (i == 1){
 			cout << "simulator battery level: " << cur_robot->get_curr_battary_level() << endl;
 			cout << "step number in the simulator " << m_steps << endl;
 			for (int r = 0; r < cur_house->get_house_matrix_rows(); r++)
@@ -104,12 +99,11 @@ int Simulator::simulate_step(int& rank_in_competition, bool about_to_finish, str
 				cout << endl;
 
 			}
-			cout << endl << endl;
-			usleep(500000);
-
+			cout << endl;
+			//usleep(500000);
 
 		}
-		
+		*/
 		////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////
 

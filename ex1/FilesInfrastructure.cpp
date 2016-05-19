@@ -99,9 +99,8 @@ void FileParser::processLine(const string& line, map<string, int> &config, strin
 	if (key.compare("MaxStepsAfterWinner") && key.compare("BatteryCapacity") && key.compare("BatteryConsumptionRate") && key.compare("BatteryRechargeRate")){
 		return;
 	}
-	if (!value.empty() && find_if(value.begin(),
-		value.end(), [](char c) { return !isdigit(c); }) == value.end()){ // value is numeric
-		config[key] = stoi(value);
+	if (is_positive_num(value)){ // value is numeric
+		config[key] = atoi(value.c_str());
 	}
 	else {
 		count_invalid++;
@@ -109,4 +108,22 @@ void FileParser::processLine(const string& line, map<string, int> &config, strin
 		config[key] = 0;
 	}
 	
+}
+
+// returns true if s represents a positive number
+bool FileParser::is_positive_num(string s){
+	if (s.empty()){
+		return false;
+	}
+	char *p;
+	if (!s.compare("0")){
+		return true;
+	}
+
+	long converted = strtol(s.c_str(), &p, 10);
+	if ((converted > 0 && !strcmp(p, "")) || (converted > 0 && !strcmp(p, "\r"))){
+		return true;
+	}
+	return false;
+
 }

@@ -202,24 +202,34 @@ vector<House*> Main::get_houses(string path) {
 		// '*.house' file was oppend seccessfuly
 		getline(fin, name); // getting name
 		getline(fin, line);
-		max_steps = atoi(line.c_str()); // getting max_steps
-		if (max_steps < 0){
+		if (!fp.is_positive_num(line)) {// getting max_steps
 			error_list.push_back(fp.get_file_name(result[i]) + ": line number 2 in house file shall be a positive number, found: " + line);
 			continue;
 		}
+		else {
+			max_steps = atoi(line.c_str());
+		}
+
+		
 		getline(fin, line);
-		r = atoi(line.c_str()); // getting number of rows
-		if (r < 0){
+		if (!fp.is_positive_num(line)) { // getting max_steps
 			error_list.push_back(fp.get_file_name(result[i]) + ": line number 3 in house file shall be a positive number, found: " + line);
 			continue;
 		}
+		else {
+			r = atoi(line.c_str());
+		}
+
+
 		getline(fin, line);
-		c = atoi(line.c_str()); // getting number of columns
-		if (c < 0){
+		if (!fp.is_positive_num(line)) {// getting max_steps
 			error_list.push_back(fp.get_file_name(result[i]) + ": line number 4 in house file shall be a positive number, found: " + line);
 			continue;
 		}
-
+		else {
+			c = atoi(line.c_str());
+		}
+	
 		matrix = new string[r]; // deleted in the destructor of House
 		for (int j = 0; j < r && getline(fin, line); j++)
 		{
@@ -289,10 +299,10 @@ int Main::fix_house_matrix(string *matrix, int rows, int cols){
 			matrix[j] = wall_line;
 		}
 		else{
-			if (matrix[j].at(0) != 'W'){
+			if ((int)matrix[j].length() > 0 && matrix[j].at(0) != 'W'){
 				matrix[j].replace(0, 1, wall_str);
 			}
-			if (matrix[j].at(cols - 1) != 'W'){
+			if ((int)matrix[j].length() > cols -1 && matrix[j].at(cols - 1) != 'W'){
 				matrix[j].replace((cols - 1), 1, wall_str);
 			}
 			count_docking += count(matrix[j].begin(), matrix[j].end(), 'D');
@@ -674,7 +684,7 @@ void Main::score_simulation(vector<Simulator*>& sim_arr, score_formula formula, 
 
 			score_matrix[j][i] = formula(score_params); // calculate score
 			if (score_matrix[j][i] == -1){ // score calculation failed
-				error_list.push_back("Score formula could not calculate some scores, see ­1 in the results table");
+				error_list.push_back("Score formula could not calculate some scores, see -­1 in the results table");
 			}
 		}
 	}

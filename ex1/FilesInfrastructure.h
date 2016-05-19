@@ -29,6 +29,9 @@ public:
 
 	// given a line read from the configuration file, update the configuration map. (from recitation)
 	void processLine(const string& line, map<string, int> &config, string& temp_invalid, int& count_invalid);
+
+	// returns true if s represents a positive number
+	bool is_positive_num(string s);
 };
 
 //#ifdef __gnu_linux__
