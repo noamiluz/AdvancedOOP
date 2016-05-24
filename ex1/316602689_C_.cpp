@@ -1,7 +1,6 @@
 /* nadavkareen 316602689; noamiluz 201307436 */
 #include "316602689_C_.h"
 
-
 /**
 * Function that returns a seggested step, according to
 * a deterministic choise of the algorithm.
@@ -85,7 +84,7 @@ Direction _316602689_C::step(Direction prevStep) {
 
 	}
 	// return to 'D' - not directly - catches left dirt abounded(if there is)
-	else if (m_needs_to_trap_left_dirt_on_prev_path && !m_one_dirt_left_locations.empty()){ 
+	else if (m_needs_to_trap_left_dirt_on_prev_path && !m_one_dirt_left_locations.empty()){
 		// getting the shortest direction to one of the '1 amount of dirt' stay in the way
 		vector<pair<int, int>>::iterator it;
 		int shortest_path_size = -1;
@@ -116,12 +115,12 @@ Direction _316602689_C::step(Direction prevStep) {
 	else { // no need to return to 'D' yet
 
 		// this location has left 1 amount of dirt - add it to the vector - so the algo could came back to it.
-		if (s_i_.dirtLevel == 2){ 
+		if (s_i_.dirtLevel == 2){
 			m_one_dirt_left_locations.push_back(pair<int, int>(get_scan_map_location()));
 		}
 
 		// at first pass on a location - cleans it till amount_of_dirt - 1.
-		if (s_i_.dirtLevel > 1){ 
+		if (s_i_.dirtLevel > 1){
 			return Direction::Stay;
 		}
 		else{ // current position is clean (almost - may contain 1 amount of dirt)

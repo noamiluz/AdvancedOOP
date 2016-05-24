@@ -53,22 +53,6 @@ class _316602689_C : public GenericAlgorithm {
 
 	Direction bfs(map<pair<int, int>, Vertex*> graph, pair<int, int> s, Vertex* t, bool only_un_scanned_nodes);
 
-public:
-
-	_316602689_C() : GenericAlgorithm(), m_prev_dirt(0), m_scan_map_location(0, 0),
-		m_docking_station_location_in_scan_map(0, 0), m_needs_to_return(false), m_finished_cleaning(false),
-		m_needs_to_trap_left_dirt_on_prev_path(false) {
-		init_map();
-	}
-
-	~_316602689_C() {}
-
-	_316602689_C(const _316602689_C&) = delete;
-
-	_316602689_C& operator=(const _316602689_C&) = delete;
-
-	virtual Direction step(Direction prevStep);
-
 	void set_battery_level();
 
 	void update_relative_locations_and_stack(Direction prevStep);
@@ -89,6 +73,22 @@ public:
 	}
 
 	Direction check_if_needs_to_return(int batteryLeft_or_maxStepsAfterWinner);
+
+public:
+
+	_316602689_C() : GenericAlgorithm(), m_prev_dirt(0), m_scan_map_location(0, 0),
+		m_docking_station_location_in_scan_map(0, 0), m_needs_to_return(false), m_finished_cleaning(false),
+		m_needs_to_trap_left_dirt_on_prev_path(false) {
+		init_map();
+	}
+
+	~_316602689_C() {}
+
+	_316602689_C(const _316602689_C&) = delete;
+
+	_316602689_C& operator=(const _316602689_C&) = delete;
+
+	virtual Direction step(Direction prevStep);
 
 };
 

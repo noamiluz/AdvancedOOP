@@ -47,22 +47,6 @@ class _316602689_A : public GenericAlgorithm {
 
 	Direction bfs(map<pair<int, int>, Vertex*> graph, pair<int, int> s, Vertex* t, bool only_un_scanned_nodes);
 
-public:
-
-	_316602689_A() : GenericAlgorithm(), m_prev_dirt(0), m_scan_map_location(0, 0),
-		m_docking_station_location_in_scan_map(0, 0), m_needs_to_return(false){
-		init_map();
-	}
-
-	~_316602689_A() {}
-
-	_316602689_A(const _316602689_A&) = delete;
-
-	_316602689_A& operator=(const _316602689_A&) = delete;
-
-	// step is called by the simulation for each time unit
-	virtual Direction step(Direction prevStep);
-
 	void set_battery_level();
 
 	void update_relative_locations_and_stack(Direction prevStep);
@@ -83,6 +67,21 @@ public:
 	}
 
 	Direction check_if_needs_to_return(int batteryLeft_or_maxStepsAfterWinner);
+public:
+
+	_316602689_A() : GenericAlgorithm(), m_prev_dirt(0), m_scan_map_location(0, 0),
+		m_docking_station_location_in_scan_map(0, 0), m_needs_to_return(false){
+		init_map();
+	}
+
+	~_316602689_A() {}
+
+	_316602689_A(const _316602689_A&) = delete;
+
+	_316602689_A& operator=(const _316602689_A&) = delete;
+
+	// step is called by the simulation for each time unit
+	virtual Direction step(Direction prevStep);
 
 };
 

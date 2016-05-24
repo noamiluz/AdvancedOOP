@@ -1,6 +1,5 @@
 /* nadavkareen 316602689; noamiluz 201307436 */
 #include "316602689_A_.h"
-#include <iostream>
 
 
 /**
@@ -122,7 +121,7 @@ void _316602689_A::set_battery_level(){
 /**
 * Function that gets the prevStep done by simulation,
 * and updates the relative location of the docking station,
-* and push to steps stack the last step taken(used just to give an upper 
+* and push to steps stack the last step taken(used just to give an upper
 * bound on the distance from 'D').
 **/
 void _316602689_A::update_relative_locations_and_stack(Direction prevStep){
@@ -205,7 +204,7 @@ void _316602689_A::init_map(){
 }
 
 /**
-* Function that updates the scanned house map - 
+* Function that updates the scanned house map -
 * sets the docking station location to be 'D',
 * sets a not wall but unknown amount of dirt to be '*',
 * sets the ones with known amount of dirt to be '1' ... '9'.
@@ -404,7 +403,7 @@ Direction _316602689_A::bfs(map<pair<int, int>, _316602689_A::Vertex*> graph, pa
 		q.pop();
 		cur->m_color = 'b';
 	}
-	
+
 	// in case of a full graph - find location of parent
 	if (!only_un_scanned_nodes){
 		pair<int, int> parent_loc;
@@ -476,7 +475,7 @@ Direction _316602689_A::bfs(map<pair<int, int>, _316602689_A::Vertex*> graph, pa
 
 /**
 * Function that called one the flag 'about_to_finish' is turned on,
-* or one we arrived to the upper bound for the distance from current location 
+* or one we arrived to the upper bound for the distance from current location
 * to docking station. This function checks if we have enough battary/steps(afterWinner)
 * to continue - if yes, returns the direction, otherwise sets the TRUE the m_needs_to_return flag.
 **/
@@ -498,7 +497,7 @@ Direction _316602689_A::check_if_needs_to_return(int batteryLeft_or_maxStepsAfte
 
 	// in case we have exactly the battary to came back OR the number of steps left after winner is less/equal to
 	// the shortest path - come back to 'D' 
-	if (batteryLeft_or_maxStepsAfterWinner <= (shortest_distance + 1) * m_config["BatteryConsumptionRate"] || 
+	if (batteryLeft_or_maxStepsAfterWinner <= (shortest_distance + 1) * m_config["BatteryConsumptionRate"] ||
 		batteryLeft_or_maxStepsAfterWinner <= (shortest_distance + 1)){
 		m_needs_to_return = true;
 	}
