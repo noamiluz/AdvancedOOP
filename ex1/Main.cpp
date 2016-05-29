@@ -48,6 +48,30 @@ House* getHouseHardCoded(){
 
 #endif
 
+/**
+* Function creates a video for every algorithm & house
+**/
+void Main::encode_images_into_video() const{
+	// iterate over all algorithmes & houses, and encode images into video
+	for (string curr_algo_name : algorithm_names) {
+			for (string curr_house_name : house_names){
+			string images_dir = "images/" + curr_algo_name + curr_house_name; // "curr_algo_name" ends with "_"
+			string images_expression = images_dir + "/image%06d.jpg";
+
+			Encoder::encode(images_expression, curr_algo_name + curr_house_name + ".mpg"); // "curr_algo_name" ends with "_"
+			// delete the images dir
+			string cmd = "rm -rf " + images_dir;
+			int ret = system(cmd.c_str());
+			if (ret == -1)
+			{
+				//handle error
+			}
+		}
+	}
+
+
+}
+
 
 /**
 * Function for printing the collected errors list.
@@ -446,7 +470,7 @@ score_formula Main::get_score_formula(const string& path){
 **/
 tuple<string, string, string, string, int> Main::command_line_arguments(int argc, char* argv[]){
 
-	int config_index = -1, house_index = -1, algorithm_index = -1, score_formula = -1, threads = -1;
+	int config_index = -1, house_index = -1, algorithm_index = -1, score_formula = -1, threads = -1, video = -1;
 	string config_path, house_path, algorithm_path, score_path, threads_num;
 	int i = 1;	// starting from i=1 (excluding the name of the program)
 	while (i < argc){
@@ -508,6 +532,12 @@ tuple<string, string, string, string, int> Main::command_line_arguments(int argc
 				return make_tuple("", "", "", "", 1);
 			}
 			i += 2;
+			continue;
+		}
+		if (!strcmp(argv[i], "-video") && video == -1){ // if at the current there is '-video' and its the first time
+			threads = i;
+			is_video = true; // there is a need just to set this member to true
+			i += 1;
 			continue;
 		}
 		else{
@@ -628,7 +658,8 @@ void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_algorit
 			about_to_finish = true;
 			called_about_to_finish = true;
 		}
-		rank_in_competition = sim.simulate_step(rank_in_competition, about_to_finish, message); // do a simulation step
+		rank_in_competition = sim.simulate_step(rank_in_competition, about_to_finish, message, is_video, algorithm_names, house_name); // do a simulation step
+
 		if (message.compare("")){ // message != ""
 			auto splitted_message = fp.split(message, ',');
 			error_list.push_back("Algorithm " + algorithm_names[atoi(splitted_message[0].c_str())] +

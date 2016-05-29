@@ -5,6 +5,9 @@
 
 #include <stdio.h>
 #include <iostream>
+#include <vector>
+#include <string>
+#include "Montage.h"
 
 using namespace std;
 
@@ -78,6 +81,10 @@ public:
 	void set_flag(bool b){
 		m_flag = b;
 	}
+
+	void create_montage(const string& algo_name, int curr_number_of_step, string& house_name, const pair<int,int>& curr_location) const;
+
+	void create_directory_if_not_exists(const string& dirPath) const;
 };
 
 #endif // __HOUSE_H 

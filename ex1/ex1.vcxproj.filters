@@ -72,6 +72,12 @@
     <ClInclude Include="Main.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Montage.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Encoder.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="simulator.cpp">
@@ -107,9 +113,54 @@
     <ClCompile Include="score_formula.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Encoder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Montage.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="config.ini">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="W">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="R">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="D">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="8">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="9">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="6">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="7">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="5">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="4">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="3">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="2">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="1">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="0">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>

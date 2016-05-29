@@ -87,11 +87,13 @@
     <ClInclude Include="AbstractSensor.h" />
     <ClInclude Include="AlgorithmRegistration.h" />
     <ClInclude Include="Direction.h" />
+    <ClInclude Include="Encoder.h" />
     <ClInclude Include="FilesInfrastructure.h" />
     <ClInclude Include="GenericAlgorithm.h" />
     <ClInclude Include="House.h" />
     <ClInclude Include="Main.h" />
     <ClInclude Include="MakeUnique.h" />
+    <ClInclude Include="Montage.h" />
     <ClInclude Include="Registrar.h" />
     <ClInclude Include="Robot.h" />
     <ClInclude Include="Sensor.h" />
@@ -103,16 +105,31 @@
     <ClCompile Include="316602689_B_.cpp" />
     <ClCompile Include="316602689_C_.cpp" />
     <ClCompile Include="AlgorithmRegistration.cpp" />
+    <ClCompile Include="Encoder.cpp" />
     <ClCompile Include="FilesInfrastructure.cpp" />
     <ClCompile Include="House.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Montage.cpp" />
     <ClCompile Include="Registrar.cpp" />
     <ClCompile Include="score_formula.cpp" />
     <ClCompile Include="Sensor.cpp" />
     <ClCompile Include="simulator.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="0" />
+    <None Include="1" />
+    <None Include="2" />
+    <None Include="3" />
+    <None Include="4" />
+    <None Include="5" />
+    <None Include="6" />
+    <None Include="7" />
+    <None Include="8" />
+    <None Include="9" />
     <None Include="config.ini" />
+    <None Include="D" />
+    <None Include="R" />
+    <None Include="W" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

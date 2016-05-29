@@ -29,9 +29,10 @@
 #include <functional>
 #include <thread>
 #include <mutex>
-
+#include "Encoder.h"
 #include <iomanip>
 #include <limits.h>
+
 
 #define PRINT_USAGE cout << "Usage: simulator [­-config <config path>] [-­house_path <house path>] [­-algorithm_path <algorithm path>] [­-score_formula <score.so path>] [­-threads <num threads>]" << endl
 
@@ -52,6 +53,7 @@ class Main {
 	vector<void*> dl_arr; // vector to hold handles for dynamic libs  
 	int num_of_simulated_houses{ 0 };
 	mutex mutex_lock;
+	bool is_video = false;
 
 public:
 
@@ -119,6 +121,19 @@ public:
 
 	// freeing all the memory left to free in the program
 	void deleting_memory(vector<House*>& house_arr, vector<Simulator*>& sim_arr);
+
+	// get the value of video parameter (false if doest enterd by the user)
+	const bool get_is_video() const{
+		return is_video;
+	}
+
+	// set the value of video parameter
+	void set_is_video(bool video){
+		is_video = video;
+	}
+
+	// creates a video for every algorithm & house
+	void encode_images_into_video() const;
 };
 
 #endif

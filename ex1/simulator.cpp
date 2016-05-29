@@ -49,7 +49,8 @@ void Simulator::init_robot_arr(House* house) {
 * according to it's corresponding algorithm.
 * Returns cuurent rank in competition achieved.
 **/
-int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, string& message){
+int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, string& message, bool is_video_on,
+	const vector<string>& algorithm_names, string& house_name){
 	m_steps++; // increment the number of steps
 	Robot * cur_robot;
 	bool is_someone_finished = false;
@@ -80,6 +81,7 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 		const pair<int, int>& cur_loc = cur_robot->get_curr_location(); // get the current location of the robot
 		pair<int, int> next_loc;
 		
+	
 		///////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////
 		/*
@@ -106,9 +108,6 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 		*/
 		////////////////////////////////////////////////////////
 		/////////////////////////////////////////////////////////////
-
-
-
 		
 		switch (d){ // calculate the next location
 		case Direction::North:
@@ -140,7 +139,13 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 			m_not_active++;
 			cur_robot->set_valid(false);
 			message = i + "," + m_steps;
+			// in case that the argument -video is enterd by the user - create an image
+			// of the current step of the current algorithem & house.
+			if (is_video_on){
+				cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+			}
 			continue;
+
 		}
 		// if the current location is a docking station, increment the curr_battery_level by RechargeRate.
 		// if the battery is full do not increment.
@@ -169,7 +174,13 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 			}
 
 			cur_robot->set_curr_location(next_loc); // set the next location as the current one
+			// in case that the argument -video is enterd by the user - create an image
+			// of the current step of the current algorithem & house.
+			if (is_video_on){
+				cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+			}
 			continue;
+
 		}
 		// if the current move was docking station, and the next one isn't docking station, charge the battary and do not decrement.
 	
@@ -194,10 +205,20 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 			cur_robot->set_active(false);
 			m_not_active++;
 			cur_robot->set_position_in_competition(10);
+			// in case that the argument -video is enterd by the user - create an image
+			// of the current step of the current algorithem & house.
+			if (is_video_on){
+				cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+			}
 			continue;
 
 		}
 		cur_robot->set_curr_location(next_loc); // set the next location as the current one
+		// in case that the argument -video is enterd by the user - create an image
+		// of the current step of the current algorithem & house.
+		if (is_video_on){
+			cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+		}
 	}
 
 	if (is_someone_finished){ // if there were robots who finished in this step increment the rank
@@ -205,6 +226,7 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 	}
 	return rank_in_competition;
 }
+
 
 /**
 * Function that updates all the robots that didn't
@@ -291,6 +313,12 @@ int main(int argc, char* argv[])
 
 	// calculate the score of each robot
 	main.score_simulation(simulator_arr, formula, num_of_houses, num_of_algorithms);
+
+	// if -video was entered - create the videos
+	if (main.get_is_video()){
+		main.encode_images_into_video();
+	}
+
 	// freeing memory
 	main.deleting_memory(house_arr, simulator_arr);
 	
