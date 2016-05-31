@@ -34,7 +34,7 @@ void House::create_montage(const string& algo_name, int curr_number_of_step, str
 				tiles.push_back(string() + m_house_matrix[curr_row][curr_col]);
 		}
 	}
-	string images_dir_path = "images/" + algo_name + house_name; // "algo_name" ends with "_"
+	string images_dir_path = "images/" + algo_name + "_" +  house_name; // "algo_name" ends with "_"
 	create_directory_if_not_exists(images_dir_path);
 	string counter_str = to_string(curr_number_of_step);
 	string composed_image = images_dir_path + "/image" + string(6 - counter_str.length(), '0') + counter_str + ".jpg";

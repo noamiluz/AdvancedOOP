@@ -55,10 +55,10 @@ void Main::encode_images_into_video() const{
 	// iterate over all algorithmes & houses, and encode images into video
 	for (string curr_algo_name : algorithm_names) {
 			for (string curr_house_name : house_names){
-			string images_dir = "images/" + curr_algo_name + curr_house_name; // "curr_algo_name" ends with "_"
+			string images_dir = "images/" + curr_algo_name + "_" + curr_house_name; // "curr_algo_name" ends with "_"
 			string images_expression = images_dir + "/image%06d.jpg";
 
-			Encoder::encode(images_expression, curr_algo_name + curr_house_name + ".mpg"); // "curr_algo_name" ends with "_"
+			Encoder::encode(images_expression, curr_algo_name + "_" + curr_house_name + ".mpg"); // "curr_algo_name" ends with "_"
 			// delete the images dir
 			string cmd = "rm -rf " + images_dir;
 			int ret = system(cmd.c_str());
