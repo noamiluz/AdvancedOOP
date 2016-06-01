@@ -70,7 +70,7 @@ class _316602689_A : public GenericAlgorithm {
 public:
 
 	_316602689_A() : GenericAlgorithm(), m_prev_dirt(0), m_scan_map_location(0, 0),
-		m_docking_station_location_in_scan_map(0, 0), m_needs_to_return(false){
+		m_docking_station_location_in_scan_map(0, 0), m_needs_to_return(false), m_finished_cleaning(false) {
 		init_map();
 	}
 

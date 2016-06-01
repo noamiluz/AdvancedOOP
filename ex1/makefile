@@ -9,14 +9,24 @@ default:
 
 OBJS = testdcl.o
 
+<<<<<<< Updated upstream
 simulator: simulator.o House.o Sensor.o FilesInfrastructure.o AlgorithmRegistration.o Registrar.o Main.o Encoder.o Montage.o
 	g++ -rdynamic -o $@ $^ -std=c++11 -fPIC -Wall -O2 -pedantic -lpthread -ldl
+=======
+simulator: simulator.o House.o Sensor.o FilesInfrastructure.o AlgorithmRegistration.o Registrar.o Main.o
+	g++ -rdynamic -o $@ $^ -std=c++11 -Wall -O2 -pedantic -pthread -ldl
+>>>>>>> Stashed changes
 
 simulator.o: simulator.cpp simulator.h AbstractAlgorithm.h AbstractSensor.h Direction.h SensorInformation.h House.h Sensor.h Robot.h Main.h FilesInfrastructure.h
 	g++ -c -std=c++11 -Wall -pedantic simulator.cpp
 
+<<<<<<< Updated upstream
 Main.o: Main.cpp Main.h Encoder.h Montage.h simulator.h AbstractAlgorithm.h AbstractSensor.h Direction.h SensorInformation.h FilesInfrastructure.h House.h Sensor.h Robot.h AlgorithmRegistration.h Registrar.h MakeUnique.h
 	g++ -c -std=c++11 -Wall -pedantic -lpthread Main.cpp
+=======
+Main.o: Main.cpp Main.h simulator.h AbstractAlgorithm.h AbstractSensor.h Direction.h SensorInformation.h FilesInfrastructure.h House.h Sensor.h Robot.h AlgorithmRegistration.h Registrar.h MakeUnique.h
+	g++ -c -std=c++11 -Wall -pedantic -pthread Main.cpp
+>>>>>>> Stashed changes
 
 House.o: House.cpp House.h Montage.h 
 	g++ -c -std=c++11 -Wall -pedantic House.cpp

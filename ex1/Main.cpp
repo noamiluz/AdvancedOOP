@@ -535,7 +535,7 @@ tuple<string, string, string, string, int> Main::command_line_arguments(int argc
 			continue;
 		}
 		if (!strcmp(argv[i], "-video") && video == -1){ // if at the current there is '-video' and its the first time
-			threads = i;
+			//threads = i;
 			is_video = true; // there is a need just to set this member to true
 			i += 1;
 			continue;
