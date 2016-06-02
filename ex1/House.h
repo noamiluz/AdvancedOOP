@@ -82,9 +82,9 @@ public:
 		m_flag = b;
 	}
 
-	void create_montage(const string& algo_name, int curr_number_of_step, string& house_name, const pair<int,int>& curr_location) const;
+	tuple<string, bool> create_montage(const string& algo_name, int curr_number_of_step, string& house_name, const pair<int,int>& curr_location) const;
 
-	void create_directory_if_not_exists(const string& dirPath) const;
+	bool create_directory_if_not_exists(const string& dirPath) const;
 };
 
 #endif // __HOUSE_H 

@@ -1,6 +1,6 @@
 /* nadavkareen 316602689; noamiluz 201307436 */
 #include "House.h"
-
+#include <tuple>
 
 
 House::House(const House& house) :
@@ -18,7 +18,7 @@ m_docking_station(house.m_docking_station), m_sum_dirt(house.m_sum_dirt){
 * Function creates a montage to this house, with a given
 * name of the algorithm currently cleaning the house.
 **/
-void House::create_montage(const string& algo_name, int curr_number_of_step, string& house_name, const pair<int, int>& curr_location) const{
+tuple<string,bool> House::create_montage(const string& algo_name, int curr_number_of_step, string& house_name, const pair<int, int>& curr_location) const{
 
 	vector<string> tiles;
 	for (int curr_row = 0; curr_row < m_rows; ++curr_row)
@@ -35,24 +35,29 @@ void House::create_montage(const string& algo_name, int curr_number_of_step, str
 		}
 	}
 	string images_dir_path = "images/" + algo_name + "_" +  house_name; // "algo_name" ends with "_"
-	create_directory_if_not_exists(images_dir_path);
+	bool b1 = create_directory_if_not_exists(images_dir_path);
+	if (!b1){
+		return make_tuple(images_dir_path, false);
+	}
 	string counter_str = to_string(curr_number_of_step);
 	string composed_image = images_dir_path + "/image" + string(6 - counter_str.length(), '0') + counter_str + ".jpg";
-	Montage::compose(tiles, m_cols, m_rows, composed_image);
+	bool b2 = Montage::compose(tiles, m_cols, m_rows, composed_image);
+	return make_tuple("", b2);
 }
 
 /**
 * Function creats a new directory in the given dirPath,
 * if one doesn't exists.
 **/
-void House::create_directory_if_not_exists(const string& dir_path) const
+bool House::create_directory_if_not_exists(const string& dir_path) const
 {
 	string cmd = "mkdir -p " + dir_path;
 	int ret = system(cmd.c_str());
 	if (ret == -1)
 	{
-		//handle error
+		return false;
 	}
+	return true;
 }
 
 /**

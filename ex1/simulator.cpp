@@ -50,7 +50,7 @@ void Simulator::init_robot_arr(House* house) {
 * Returns cuurent rank in competition achieved.
 **/
 int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, string& message, bool is_video_on,
-	const vector<string>& algorithm_names, string& house_name){
+	const vector<string>& algorithm_names, string& house_name, vector<int>& failed_images, vector<string>& failed_directory){
 	m_steps++; // increment the number of steps
 	Robot * cur_robot;
 	bool is_someone_finished = false;
@@ -142,7 +142,13 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 			// in case that the argument -video is enterd by the user - create an image
 			// of the current step of the current algorithem & house.
 			if (is_video_on){
-				cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+				auto tup = cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+				string dir = get<0>(tup);
+				bool b_img = get<1>(tup);
+				if (!b_img) {
+					failed_images[i]++;
+				}
+				failed_directory[i] = dir;
 			}
 			continue;
 
@@ -177,7 +183,13 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 			// in case that the argument -video is enterd by the user - create an image
 			// of the current step of the current algorithem & house.
 			if (is_video_on){
-				cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+				auto tup = cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+				string dir = get<0>(tup);
+				bool b_img = get<1>(tup);
+				if (!b_img) {
+					failed_images[i]++;
+				}
+				failed_directory[i] = dir;
 			}
 			continue;
 
@@ -208,7 +220,13 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 			// in case that the argument -video is enterd by the user - create an image
 			// of the current step of the current algorithem & house.
 			if (is_video_on){
-				cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+				auto tup = cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+				string dir = get<0>(tup);
+				bool b_img = get<1>(tup);
+				if (!b_img) {
+					failed_images[i]++;
+				}
+				failed_directory[i] = dir;
 			}
 			continue;
 
@@ -217,7 +235,13 @@ int Simulator::simulate_step(int rank_in_competition, bool about_to_finish, stri
 		// in case that the argument -video is enterd by the user - create an image
 		// of the current step of the current algorithem & house.
 		if (is_video_on){
-			cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+			auto tup = cur_robot->get_house()->create_montage(algorithm_names[i], m_steps, house_name, cur_loc);
+			string dir = get<0>(tup);
+			bool b_img = get<1>(tup);
+			if (!b_img) {
+				failed_images[i]++;
+			}
+			failed_directory[i] = dir;
 		}
 	}
 
@@ -311,13 +335,13 @@ int main(int argc, char* argv[])
 	
 	main.execute_simulation_multi_threaded(simulator_arr, config, num_of_threads, num_of_houses, num_of_algorithms);
 
-	// calculate the score of each robot
-	main.score_simulation(simulator_arr, formula, num_of_houses, num_of_algorithms);
-
 	// if -video was entered - create the videos
 	if (main.get_is_video()){
 		main.encode_images_into_video();
 	}
+
+	// calculate the score of each robot
+	main.score_simulation(simulator_arr, formula, num_of_houses, num_of_algorithms);
 
 	// freeing memory
 	main.deleting_memory(house_arr, simulator_arr);

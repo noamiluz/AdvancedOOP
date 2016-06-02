@@ -13,7 +13,7 @@ using namespace std;
 class Encoder
 {
 public:
-  static void encode(const string& imagesString, const string& videoOutput);
+  static bool encode(const string& imagesString, const string& videoOutput);
 };
 
 #endif //_ENCODER__H_

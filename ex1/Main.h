@@ -133,7 +133,7 @@ public:
 	}
 
 	// creates a video for every algorithm & house
-	void encode_images_into_video() const;
+	void encode_images_into_video();
 };
 
 #endif

@@ -51,14 +51,17 @@ House* getHouseHardCoded(){
 /**
 * Function creates a video for every algorithm & house
 **/
-void Main::encode_images_into_video() const{
+void Main::encode_images_into_video() {
 	// iterate over all algorithmes & houses, and encode images into video
 	for (string curr_algo_name : algorithm_names) {
-			for (string curr_house_name : house_names){
+		for (string curr_house_name : house_names){
 			string images_dir = "images/" + curr_algo_name + "_" + curr_house_name; // "curr_algo_name" ends with "_"
 			string images_expression = images_dir + "/image%06d.jpg";
 
-			Encoder::encode(images_expression, curr_algo_name + "_" + curr_house_name + ".mpg"); // "curr_algo_name" ends with "_"
+			bool b = Encoder::encode(images_expression, curr_algo_name + "_" + curr_house_name + ".mpg"); // "curr_algo_name" ends with "_"
+			if (!b){
+				error_list.push_back("Error: In the simulation " + curr_algo_name + ", " + curr_house_name + ": video file creation failed");
+			}
 			// delete the images dir
 			string cmd = "rm -rf " + images_dir;
 			int ret = system(cmd.c_str());
@@ -636,6 +639,13 @@ void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_algorit
 	int num_steps_after_winning = 0;
 	int rank_in_competition = 1;
 	string message("");
+	vector<int> failed_images;
+	vector<string> failed_directory;
+	for (int i = 0; i < num_of_algorithms; i++)
+	{
+		failed_images.push_back(0);
+		failed_directory.push_back("");
+	}
 	/*
 	// setSenor for all algorithms, in each new simulation (i.e - for each house)
 	for (int j = 0; j < num_of_algorithms; j++)
@@ -658,7 +668,7 @@ void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_algorit
 			about_to_finish = true;
 			called_about_to_finish = true;
 		}
-		rank_in_competition = sim.simulate_step(rank_in_competition, about_to_finish, message, is_video, algorithm_names, house_name); // do a simulation step
+		rank_in_competition = sim.simulate_step(rank_in_competition, about_to_finish, message, is_video, algorithm_names, house_name, failed_images, failed_directory); // do a simulation step
 
 		if (message.compare("")){ // message != ""
 			auto splitted_message = fp.split(message, ',');
@@ -671,6 +681,20 @@ void Main::simulate(Simulator& sim, map<string, int>& config, int num_of_algorit
 
 	// finish the simulation
 	sim.finish_simulation();
+
+	for (int i = 0; i < num_of_algorithms; i++)
+	{
+		if (!failed_directory[i].empty()){
+			error_list.push_back("Error: In the simulation " + algorithm_names[i] + ", " + house_name + ": folder creation " + failed_directory[i] + " failed");
+		}
+	}
+
+	for (int i = 0; i < num_of_algorithms; i++)
+	{
+		if (failed_images[i] > 0){
+			error_list.push_back("Error: In the simulation " + algorithm_names[i] + ", " + house_name + ": the creation of " + to_string(failed_images[i]) + " images was failed");
+		}
+	}
 }
 
 /**
